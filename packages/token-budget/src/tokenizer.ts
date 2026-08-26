@@ -1,18 +1,80 @@
-import type { BudgetMessage, ContentBlock, ContentCounter, Tokenizer } from './types.js';
+import type { BudgetMessage, ContentBlock, ContentCounter, EstimatorProfile, Tokenizer } from './types.js';
+
+/**
+ * chars-per-token ratios per script profile (FR2-7.2), calibrated against
+ * a small representative corpus using OpenAI's cl100k_base tokenizer —
+ * see the README's "Locale-aware estimation" section for the exact
+ * corpus, methodology, and measured numbers these round from. A
+ * reasonably conservative, widely-used baseline, not a claim about any
+ * specific model's real tokenizer (none of these scripts have one public
+ * and free to run offline).
+ */
+const PROFILE_RATIOS: Record<'latin' | 'cjk' | 'cyrillic', number> = {
+  latin: 4, // Phase 1's original, unchanged default
+  cjk: 1,
+  cyrillic: 2,
+};
+
+function isCJK(code: number): boolean {
+  return (
+    (code >= 0x4e00 && code <= 0x9fff) || // CJK Unified Ideographs
+    (code >= 0x3400 && code <= 0x4dbf) || // CJK Extension A
+    (code >= 0x3040 && code <= 0x30ff) || // Hiragana + Katakana
+    (code >= 0xac00 && code <= 0xd7a3) // Hangul Syllables
+  );
+}
+
+function isCyrillic(code: number): boolean {
+  return code >= 0x0400 && code <= 0x04ff;
+}
+
+/**
+ * FR2-7.3: lightweight, zero-dependency script detection over a prefix of
+ * the text (Unicode code-point range sampling — no language-detection
+ * dependency). Mixed-script text gets a single best-effort classification
+ * by majority, not a true per-character blend (FR2-7.4) — for precision,
+ * use a real tokenizer adapter (`token-budget-tiktoken`, `token-budget-claude`).
+ */
+function detectScript(text: string): 'latin' | 'cjk' | 'cyrillic' {
+  const sample = text.slice(0, 200);
+  let cjk = 0;
+  let cyrillic = 0;
+  let other = 0;
+  for (const ch of sample) {
+    const code = ch.codePointAt(0) ?? 0;
+    if (isCJK(code)) cjk++;
+    else if (isCyrillic(code)) cyrillic++;
+    else if (!/\s/.test(ch)) other++;
+  }
+  if (cjk > cyrillic && cjk > other) return 'cjk';
+  if (cyrillic > cjk && cyrillic > other) return 'cyrillic';
+  return 'latin';
+}
 
 /**
  * Zero-dependency fallback estimator. Approximates token count from
- * character length (default: 4 chars/token, a reasonable blended average
- * for English text across GPT/Claude-style BPE tokenizers). Tune
- * `charsPerToken` down for token-dense text (e.g. CJK) or up for
- * token-sparse text (e.g. repetitive whitespace/code).
+ * character length, two ways:
+ *  - `charsPerToken`: a fixed ratio override — takes precedence whenever
+ *    it's a positive number (Phase 1's original knob, unchanged).
+ *  - `profile` (FR2-7.1, default `'latin'`, ratio 4 — Phase 1's exact
+ *    original behavior): `'cjk'` (ratio 1), `'cyrillic'` (ratio 2), or
+ *    `'auto-detect'` to pick a ratio per call via `detectScript`.
  */
-export function createEstimateTokenizer(charsPerToken = 4): Tokenizer {
-  const ratio = charsPerToken > 0 ? charsPerToken : 4;
+export function createEstimateTokenizer(charsPerToken?: number, profile: EstimatorProfile = 'latin'): Tokenizer {
+  if (charsPerToken !== undefined && charsPerToken > 0) {
+    const ratio = charsPerToken;
+    return {
+      count(text: string): number {
+        if (!text) return 0;
+        return Math.ceil(text.length / ratio);
+      },
+    };
+  }
   return {
     count(text: string): number {
       if (!text) return 0;
-      return Math.ceil(text.length / ratio);
+      const resolved = profile === 'auto-detect' ? detectScript(text) : profile;
+      return Math.ceil(text.length / PROFILE_RATIOS[resolved]);
     },
   };
 }

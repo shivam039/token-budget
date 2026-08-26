@@ -411,12 +411,55 @@ throws otherwise.
 ## Tokenizers
 
 By default, `TokenBudget` uses a zero-dependency heuristic estimator
-(`chars / charsPerToken`, default `charsPerToken: 4`). Tune it for
+(`chars / charsPerToken`, default `charsPerToken: 4`). Tune it directly for
 token-dense text:
 
 ```ts
 new TokenBudget({ maxTokens: 4000, charsPerToken: 2.5 }); // e.g. CJK-heavy content
 ```
+
+### Locale-aware estimation
+
+Instead of a manual ratio, pick a script profile — `estimatorProfile`
+(default `'latin'`, ratio `4` — Phase 1's exact original behavior,
+unchanged unless you opt in):
+
+```ts
+new TokenBudget({ maxTokens: 4000, estimatorProfile: 'cjk' });       // ratio 1
+new TokenBudget({ maxTokens: 4000, estimatorProfile: 'cyrillic' });  // ratio 2
+new TokenBudget({ maxTokens: 4000, estimatorProfile: 'auto-detect' }); // picks a ratio per message
+```
+
+`'auto-detect'` performs lightweight, zero-dependency Unicode-range
+script detection on a prefix of each message (no language-detection
+package — hand-rolled code-point range checks, staying inside the core
+zero-dependency constraint). Mixed-script text gets a single best-effort
+classification by majority, not a true per-character blend — for
+precision on mixed content, use a real tokenizer adapter instead
+(`token-budget-tiktoken`, `token-budget-claude`). `charsPerToken` always
+takes precedence over `estimatorProfile` when both are set.
+
+The three fixed ratios (`latin: 4`, `cjk: 1`, `cyrillic: 2`) were
+calibrated against a small representative corpus, measured with OpenAI's
+`cl100k_base` tokenizer (chosen as a real, widely-used, offline-computable
+baseline — not a claim about any specific model's exact tokenizer, since
+none of these scripts has one that's both public and free to run
+offline):
+
+| Sample | chars/token (cl100k_base) | Rounded profile ratio |
+| --- | --- | --- |
+| English prose | 4.23 | `latin`: 4 |
+| Japanese (mixed Kanji/Hiragana) | 1.15 | `cjk`: 1 |
+| Chinese | 0.94 | `cjk`: 1 |
+| Russian | 1.98 | `cyrillic`: 2 |
+
+Each sample was ~300–900 characters of representative prose, repeated for
+a stable measurement; reproduce with `createTiktokenTokenizer({ encoding:
+'cl100k_base' }).count(text)` from `token-budget-tiktoken`. These ratios
+are deliberately conservative (rounded toward *more* estimated tokens per
+character) — underestimating token cost risks silent context overflow,
+which is worse than a bit of wasted budget headroom from overestimating.
+For exact counts in any language, use a real tokenizer adapter.
 
 Or supply an exact tokenizer via the `Tokenizer` interface:
 
@@ -453,17 +496,16 @@ new TokenBudget({
 });
 ```
 
-> `token-budget-claude` is still on the roadmap as a separate, thin peer
-> package. `token-budget-anthropic`, `token-budget-openai`,
-> `token-budget-vercel-ai`, `token-budget-tiktoken`, and
-> `token-budget-langchain` are available now — see [Framework
-> adapters](#framework-adapters) below.
-
 ## Tokenizer adapters
 
 - [`token-budget-tiktoken`](../token-budget-tiktoken) — exact OpenAI-family
   tokenizer, pure-JS (`js-tiktoken`) by default with an opt-in Node-only
   native/WASM path.
+- [`token-budget-claude`](../token-budget-claude) — best-effort Claude
+  approximation (Anthropic has never published a real tokenizer) with a
+  `calibrate()` utility to tune it against your own real usage data. Read
+  its README's accuracy disclaimer before relying on it for anything
+  precision-sensitive.
 
 ## Framework adapters
 
@@ -560,8 +602,6 @@ it just won't show up in explain reports.
 
 ## Roadmap (not in this release)
 
-- **Tokenizer adapters**: `token-budget-claude`.
-- **Locale-aware estimation**: an `estimatorProfile` option on the heuristic estimator.
 - **Performance/scale hardening**: a published benchmark suite at 1k/10k/50k/100k messages.
 - **Ecosystem docs**: a strategy cookbook, `CONTRIBUTING.md`, and a compatibility matrix.
 

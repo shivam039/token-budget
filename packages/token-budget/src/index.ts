@@ -16,6 +16,7 @@ export type {
   ContentBlock,
   ContentCounter,
   ContextResult,
+  EstimatorProfile,
   EvictedInfo,
   ExplainReport,
   OverflowInfo,

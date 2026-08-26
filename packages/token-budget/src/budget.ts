@@ -137,7 +137,9 @@ export class TokenBudget {
     this.persistDebounceMs = config.persistDebounceMs ?? 0;
 
     const tokenizer =
-      config.tokenizer && config.tokenizer !== 'estimate' ? config.tokenizer : createEstimateTokenizer(config.charsPerToken);
+      config.tokenizer && config.tokenizer !== 'estimate'
+        ? config.tokenizer
+        : createEstimateTokenizer(config.charsPerToken, config.estimatorProfile);
     this.counters = {
       tokenizer,
       messageOverhead: config.messageOverhead ?? defaultMessageOverhead,

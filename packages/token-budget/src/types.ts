@@ -37,6 +37,9 @@ export interface BudgetMessage {
   tokens?: number;
 }
 
+/** Script profile for the built-in heuristic estimator (FR2-7.1). */
+export type EstimatorProfile = 'latin' | 'cjk' | 'cyrillic' | 'auto-detect';
+
 export interface Tokenizer {
   count(text: string): number;
   encode?(text: string): number[];
@@ -216,8 +219,14 @@ export interface TokenBudgetConfig {
   reserve?: number;
   /** A Tokenizer instance, or the string 'estimate' for the built-in heuristic. Default 'estimate'. */
   tokenizer?: Tokenizer | 'estimate';
-  /** Heuristic estimator tuning: characters per token. Default 4. */
+  /** Heuristic estimator tuning: characters per token. Takes precedence over `estimatorProfile` when set. */
   charsPerToken?: number;
+  /**
+   * Heuristic estimator script profile (FR2-7.1). Default `'latin'`
+   * (ratio 4 — Phase 1's exact original behavior). Ignored if
+   * `charsPerToken` is also set.
+   */
+  estimatorProfile?: EstimatorProfile;
   /** Fraction of the effective budget at which a `warning` event fires. Default 0.8. */
   warningThreshold?: number;
   /** Eviction/compression strategy applied by `getContext`/`getContextSync`. Default `dropOldest()`. */
