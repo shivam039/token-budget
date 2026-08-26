@@ -220,6 +220,23 @@ export class TokenBudget {
     this.warned = false;
   }
 
+  /**
+   * Replaces the raw buffer with `messages` — typically a `getContext()`/
+   * `getContextSync()` result's `.messages` — recomputing totals.
+   * `getContext()` itself never mutates the buffer (every call re-derives
+   * from the full history), so making an eviction or summarization
+   * "stick" across turns requires explicitly committing its result back in
+   * before the next `addMessage()`/`getContext()` cycle. This is what lets
+   * `summarize-oldest` re-summarize a previous summary on a later call
+   * (Phase 2 §3.5) instead of re-deriving from the same full history
+   * every time.
+   */
+  commit(messages: BudgetMessage[]): void {
+    this.messages = [...messages];
+    this.totalTokens = this.messages.reduce((sum, m) => sum + (m.tokens ?? this.computeTokens(m)), 0);
+    this.checkWarning();
+  }
+
   /** Raw, unfiltered buffer contents in insertion order (FR-3.7). */
   getMessages(): BudgetMessage[] {
     return [...this.messages];
@@ -424,17 +441,18 @@ export class TokenBudget {
       tokensUsed,
       countMessage,
       countTokens: (msgs: BudgetMessage[]) => msgs.reduce((sum, m) => sum + countMessage(m), 0),
-      makeSynthetic: (content: string, sourceIds: string[]) => this.makeSynthetic(content, sourceIds),
+      makeSynthetic: (content: string, sourceIds: string[], extraMetadata?: Record<string, unknown>) =>
+        this.makeSynthetic(content, sourceIds, extraMetadata),
       trace: (step: StrategyStepTrace) => steps.push(step),
     };
   }
 
-  private makeSynthetic(content: string, sourceIds: string[]): BudgetMessage {
+  private makeSynthetic(content: string, sourceIds: string[], extraMetadata?: Record<string, unknown>): BudgetMessage {
     const message: BudgetMessage = {
       id: this.generateId(),
       role: 'system',
       content,
-      metadata: { synthetic: true, sourceIds },
+      metadata: { synthetic: true, sourceIds, ...extraMetadata },
       timestamp: Date.now(),
     };
     message.tokens = this.computeTokens(message);

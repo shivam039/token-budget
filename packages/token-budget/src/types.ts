@@ -57,8 +57,10 @@ export interface StrategyContext {
    * Wraps a summary string as a synthetic pinned-safe replacement message.
    * Strategies that synthesize replacement content (e.g. summarize-oldest)
    * should use this so downstream eviction accounting stays consistent.
+   * `extraMetadata` is merged into the synthetic message's `metadata`
+   * (e.g. `{ summaryDepth }` for recursive summarization, FR2-5.2).
    */
-  makeSynthetic: (content: string, sourceIds: string[]) => BudgetMessage;
+  makeSynthetic: (content: string, sourceIds: string[], extraMetadata?: Record<string, unknown>) => BudgetMessage;
   /**
    * Optional trace sink (Phase 2 §3.4). When present, a strategy that
    * evicts or summarizes anything should call this once with a summary of

@@ -83,6 +83,7 @@ Construction throws a descriptive error if `reserve >= maxTokens`, or if
 | `removeMessage(id)` | Removes a message by id, returns `false` if not found. |
 | `editMessage(id, patch)` | Edits a message by id and recomputes totals; throws if not found. |
 | `clear()` | Empties the buffer. |
+| `commit(messages)` | Replaces the raw buffer with `messages` (typically a `getContext()`/`getContextSync()` result's `.messages`), recomputing totals — makes an eviction/summarization "stick" across turns, since `getContext()` itself never mutates the buffer. |
 | `getMessages()` | Raw, unfiltered buffer, in insertion order. |
 | `getContext()` | `Promise<ContextResult>` — applies the configured strategy (works for async strategies like `summarizeOldest`). |
 | `getContextSync()` | Sync `ContextResult`; throws if the configured strategy isn't guaranteed synchronous. |
@@ -257,12 +258,12 @@ budget.addMessage({ role: 'user', content: 'small talk', priority: 1 });
 budget.addMessage({ role: 'user', content: "the user's actual question", priority: 10 });
 ```
 
-### `strategies.summarizeOldest({ summarize, preThreshold?, blockSize?, onError?, retries? })`
+### `strategies.summarizeOldest({ summarize, preThreshold?, blockSize?, onError?, retries?, maxSummaryDepth?, onMaxDepthReached? })`
 
 When over budget (or over `preThreshold` × effective budget), takes the
-oldest contiguous block of non-pinned atomic units, passes them to your
+oldest eligible block of non-pinned atomic units, passes them to your
 `summarize` callback, and replaces them with a single synthetic
-`{ role: 'system', content: summary, metadata: { synthetic: true, sourceIds } }`
+`{ role: 'system', content: summary, metadata: { synthetic: true, sourceIds, summaryDepth } }`
 message.
 
 ```ts
@@ -274,10 +275,54 @@ strategies.summarizeOldest({
 ```
 
 `summarize-oldest` is hook-based only — bring your own summarization call.
-Because it's heuristic (it doesn't know the summary's token cost until
-`summarize` returns), it does **not** give the same hard "never exceeds
-budget" guarantee as the other three built-ins. Chain it after
+Because it's heuristic (it doesn't know the new summary's own token cost
+until `summarize` returns), it does **not** give the same hard "never
+exceeds budget" guarantee as the other three built-ins. Chain it after
 `slidingWindow`/`dropOldest` (see below) if you need a hard backstop.
+
+#### Recursive summarization
+
+A synthetic summary that's still the oldest eligible content when the
+buffer overflows *again* gets folded into a new summary itself —
+`sourceIds` accumulates across every pass (so a final summary always
+traces back to every original message it represents, never just the
+immediately-prior one), and `metadata.summaryDepth` increments each time.
+Once a summary reaches `maxSummaryDepth` (default `3`), it's never
+re-summarized further — `onMaxDepthReached` (default `'keep-forever'`)
+governs what happens to it if it's still the oldest thing in an
+over-budget buffer: leave it in place (`'keep-forever'`), evict it like
+`drop-oldest` would (`'evict'`), or decide per-message with a callback
+`(message) => 'evict' | 'keep-forever'`.
+
+Two things to know before relying on this across turns:
+
+- **`getContext()`/`getContextSync()` never mutate the buffer** — every
+  call re-derives from the full raw history (`getMessages()` always
+  returns everything, by design). For a summary to actually *stick* and
+  be eligible for re-summarization later, commit each round's result back
+  in before the next turn: `budget.commit(ctx.messages)`.
+- **Give it headroom.** Because the new synthetic's cost isn't known
+  until after `summarize()` returns, set `preThreshold` a bit below `1`
+  (e.g. `0.7`–`0.85`) when chaining with a hard backstop like
+  `dropOldest()` — otherwise the backstop can immediately evict a summary
+  in the very round it was created, before it ever gets a chance to
+  survive to a later round:
+
+```ts
+strategies.chain([
+  strategies.summarizeOldest({
+    summarize: callMyLLM,
+    preThreshold: 0.8, // headroom for the synthetic's own token cost
+    maxSummaryDepth: 3,
+    onMaxDepthReached: 'keep-forever', // dropOldest is the "if absolutely necessary" backstop
+  }),
+  strategies.dropOldest(),
+]);
+
+// each turn:
+const ctx = await budget.getContext();
+budget.commit(ctx.messages); // make this round's compaction stick
+```
 
 ### `strategies.chain([...strategies])`
 

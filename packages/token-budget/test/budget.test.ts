@@ -72,6 +72,25 @@ describe('TokenBudget buffer management', () => {
     expect(budget.stats().tokensUsed).toBe(0);
   });
 
+  it('commit() replaces the raw buffer and recomputes totals', async () => {
+    const budget = new TokenBudget({ maxTokens: 1000, charsPerToken: 1 });
+    budget.addMessage({ role: 'user', content: 'a'.repeat(10) });
+    budget.addMessage({ role: 'user', content: 'b'.repeat(10) });
+    const ctx = await budget.getContext(); // no-op strategy, but exercises the real path
+    budget.commit(ctx.messages);
+    expect(budget.getMessages()).toHaveLength(2);
+    expect(budget.stats().tokensUsed).toBe(ctx.tokensUsed);
+  });
+
+  it('commit() drops messages not included, e.g. after an external filter', () => {
+    const budget = new TokenBudget({ maxTokens: 1000, charsPerToken: 1 });
+    const a = budget.addMessage({ role: 'user', content: 'keep me' });
+    budget.addMessage({ role: 'user', content: 'drop me' });
+    budget.commit([a]);
+    expect(budget.getMessages()).toEqual([a]);
+    expect(budget.stats().tokensUsed).toBe(a.tokens);
+  });
+
   it('getMessages() maintains insertion order and is a defensive copy', () => {
     const budget = new TokenBudget({ maxTokens: 1000 });
     budget.addMessage({ role: 'user', content: 'one' });
