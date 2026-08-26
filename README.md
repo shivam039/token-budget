@@ -12,6 +12,7 @@ provider SDKs.
 | [`packages/token-budget-anthropic`](./packages/token-budget-anthropic) | Anthropic Messages API adapter. |
 | [`packages/token-budget-openai`](./packages/token-budget-openai) | OpenAI Chat Completions API adapter. |
 | [`packages/token-budget-vercel-ai`](./packages/token-budget-vercel-ai) | Vercel AI SDK adapter, streaming integration, optional React hook. |
+| [`packages/token-budget-tiktoken`](./packages/token-budget-tiktoken) | Exact OpenAI-family tokenizer (pure-JS by default, opt-in native/WASM path). |
 
 Each package is independently versioned and independently installable —
 `token-budget` is a peer dependency of the adapters, not a hard pin. See
@@ -37,12 +38,12 @@ Each package also has its own scripts (`npm run test --workspace=token-budget-an
 
 Done so far, in the project's own suggested sprint order: the Anthropic
 and OpenAI framework adapters plus the shared adapter conformance suite
-(`token-budget/test-utils`); `explain()`/the `decision` event; and
-streaming support (`beginStream`/`appendStreamChunk`/`endStream`/
-`abortStream`) plus `token-budget-vercel-ai`. Still to come:
-`token-budget-tiktoken`, recursive summarization, persistence hooks,
-`token-budget-langchain`, `token-budget-claude` + locale-aware estimation,
-performance/scale hardening, and ecosystem docs.
+(`token-budget/test-utils`); `explain()`/the `decision` event; streaming
+support (`beginStream`/`appendStreamChunk`/`endStream`/`abortStream`) plus
+`token-budget-vercel-ai`; and `token-budget-tiktoken`. Still to come:
+recursive summarization, persistence hooks, `token-budget-langchain`,
+`token-budget-claude` + locale-aware estimation, performance/scale
+hardening, and ecosystem docs.
 
 ## License
 

@@ -304,8 +304,7 @@ token-dense text:
 new TokenBudget({ maxTokens: 4000, charsPerToken: 2.5 }); // e.g. CJK-heavy content
 ```
 
-Or supply an exact tokenizer (e.g. from `tiktoken` or Anthropic's token
-counting API) via the `Tokenizer` interface:
+Or supply an exact tokenizer via the `Tokenizer` interface:
 
 ```ts
 interface Tokenizer {
@@ -313,7 +312,17 @@ interface Tokenizer {
   encode?(text: string): number[];
 }
 
-new TokenBudget({ maxTokens: 4000, tokenizer: myTiktokenTokenizer });
+new TokenBudget({ maxTokens: 4000, tokenizer: myTokenizer });
+```
+
+[`token-budget-tiktoken`](../token-budget-tiktoken) implements this for
+OpenAI's tokenizer (pure-JS by default, with an opt-in native/WASM path):
+
+```ts
+import { createTiktokenTokenizer } from 'token-budget-tiktoken';
+
+const tokenizer = await createTiktokenTokenizer({ model: 'gpt-4o' }); // async: loads the encoding once
+new TokenBudget({ maxTokens: 128000, tokenizer }); // count()/encode() are sync from here on
 ```
 
 `messageOverhead` and `contentCounters` let you account for provider-
@@ -330,12 +339,17 @@ new TokenBudget({
 });
 ```
 
-> First-party tokenizer adapter packages (`token-budget-tiktoken`,
-> `token-budget-claude`) and the `token-budget-langchain` framework adapter
+> `token-budget-claude` and the `token-budget-langchain` framework adapter
 > are still on the roadmap as separate, thin peer packages.
-> `token-budget-anthropic`, `token-budget-openai`, and
-> `token-budget-vercel-ai` are available now — see [Framework
+> `token-budget-anthropic`, `token-budget-openai`, `token-budget-vercel-ai`,
+> and `token-budget-tiktoken` are available now — see [Framework
 > adapters](#framework-adapters) below.
+
+## Tokenizer adapters
+
+- [`token-budget-tiktoken`](../token-budget-tiktoken) — exact OpenAI-family
+  tokenizer, pure-JS (`js-tiktoken`) by default with an opt-in Node-only
+  native/WASM path.
 
 ## Framework adapters
 
@@ -429,7 +443,7 @@ it just won't show up in explain reports.
 ## Roadmap (not in this release)
 
 - **More framework adapters**: `token-budget-langchain`.
-- **Tokenizer adapters**: `token-budget-tiktoken`, `token-budget-claude`.
+- **Tokenizer adapters**: `token-budget-claude`.
 - **Persistence hooks**: `serialize()`/`deserialize()`.
 
 ## Non-goals
