@@ -1,0 +1,19 @@
+import { runAdapterConformanceSuite, type AdapterUnderTest } from 'token-budget/test-utils';
+import type { AddMessageInput, BudgetMessage } from 'token-budget';
+import { toOpenAIMessages, fromOpenAIMessages } from '../src/index.js';
+import type { OpenAIMessage } from '../src/index.js';
+
+const openaiAdapter: AdapterUnderTest<OpenAIMessage[]> = {
+  name: 'token-budget-openai',
+  toExternal: (messages: BudgetMessage[]) => toOpenAIMessages(messages),
+  fromExternal: (external: OpenAIMessage[]): AddMessageInput[] => fromOpenAIMessages(external),
+  buildFixtureMessages: () => [
+    { role: 'system', content: 'You are a helpful assistant.', pinned: true },
+    { role: 'user', content: 'What is the weather in Paris?' },
+    { id: 'call_1', role: 'assistant', content: [{ type: 'tool_call', id: 'call_1', name: 'get_weather', arguments: { city: 'Paris' } }] },
+    { role: 'tool', content: [{ type: 'tool_result', toolUseId: 'call_1', result: 'Sunny, 22°C' }], toolCallId: 'call_1' },
+    { role: 'assistant', content: 'The weather in Paris is sunny and 22°C.' },
+  ],
+};
+
+runAdapterConformanceSuite(openaiAdapter);

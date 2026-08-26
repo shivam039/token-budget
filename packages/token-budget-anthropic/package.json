@@ -1,0 +1,49 @@
+{
+  "name": "token-budget-anthropic",
+  "version": "0.1.0",
+  "description": "Anthropic Messages API adapter for token-budget.",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "sideEffects": false,
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run build && npm run test"
+  },
+  "keywords": [
+    "llm",
+    "tokens",
+    "anthropic",
+    "claude",
+    "token-budget"
+  ],
+  "license": "MIT",
+  "peerDependencies": {
+    "token-budget": "^0.1.0"
+  },
+  "devDependencies": {
+    "@vitest/coverage-v8": "^2.1.0",
+    "token-budget": "^0.1.0",
+    "tsup": "^8.3.0",
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0"
+  }
+}

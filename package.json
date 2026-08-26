@@ -1,47 +1,15 @@
 {
-  "name": "token-budget",
-  "version": "0.1.0",
-  "description": "Model-agnostic token accounting and eviction strategies for multi-turn LLM conversations.",
-  "type": "module",
-  "main": "./dist/index.cjs",
-  "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
-    }
-  },
-  "files": [
-    "dist",
-    "README.md"
+  "name": "token-budget-monorepo",
+  "private": true,
+  "description": "Monorepo for token-budget core and its adapter/tokenizer packages.",
+  "workspaces": [
+    "packages/*"
   ],
-  "sideEffects": false,
-  "engines": {
-    "node": ">=18"
-  },
   "scripts": {
-    "build": "tsup",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage",
-    "typecheck": "tsc --noEmit",
-    "prepublishOnly": "npm run build && npm run test"
+    "build": "npm run build --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "test:coverage": "npm run test:coverage --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present"
   },
-  "keywords": [
-    "llm",
-    "tokens",
-    "context-window",
-    "openai",
-    "anthropic",
-    "chat"
-  ],
-  "license": "MIT",
-  "devDependencies": {
-    "@vitest/coverage-v8": "^2.1.0",
-    "tsup": "^8.3.0",
-    "typescript": "^5.6.0",
-    "vitest": "^2.1.0"
-  }
+  "license": "MIT"
 }

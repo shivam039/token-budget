@@ -9,4 +9,5 @@ export default defineConfig({
   splitting: false,
   minify: false,
   target: 'es2020',
+  external: ['token-budget'],
 });

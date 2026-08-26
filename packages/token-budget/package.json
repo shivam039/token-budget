@@ -1,0 +1,60 @@
+{
+  "name": "token-budget",
+  "version": "0.1.0",
+  "description": "Model-agnostic token accounting and eviction strategies for multi-turn LLM conversations.",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./test-utils": {
+      "types": "./dist/test-utils.d.ts",
+      "import": "./dist/test-utils.js",
+      "require": "./dist/test-utils.cjs"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "sideEffects": false,
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run build && npm run test"
+  },
+  "keywords": [
+    "llm",
+    "tokens",
+    "context-window",
+    "openai",
+    "anthropic",
+    "chat"
+  ],
+  "license": "MIT",
+  "peerDependencies": {
+    "vitest": ">=1.0.0"
+  },
+  "peerDependenciesMeta": {
+    "vitest": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@vitest/coverage-v8": "^2.1.0",
+    "tsup": "^8.3.0",
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0"
+  }
+}
