@@ -20,6 +20,8 @@ export type {
   ExplainReport,
   OverflowInfo,
   Role,
+  SerializedState,
+  SerializedStream,
   Stats,
   Strategy,
   StrategyContext,

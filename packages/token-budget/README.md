@@ -84,6 +84,8 @@ Construction throws a descriptive error if `reserve >= maxTokens`, or if
 | `editMessage(id, patch)` | Edits a message by id and recomputes totals; throws if not found. |
 | `clear()` | Empties the buffer. |
 | `commit(messages)` | Replaces the raw buffer with `messages` (typically a `getContext()`/`getContextSync()` result's `.messages`), recomputing totals — makes an eviction/summarization "stick" across turns, since `getContext()` itself never mutates the buffer. |
+| `serialize(options?)` | Plain, JSON-serializable snapshot of messages + JSON-safe config. `{ includeOpenStreams? }`, default excluded. |
+| `TokenBudget.deserialize(state, overrides?)` (static) | Reconstructs a fully-functional instance from a `serialize()` snapshot; `overrides` re-supplies non-serializable config (tokenizer, strategy, ...) and can override anything else too. |
 | `getMessages()` | Raw, unfiltered buffer, in insertion order. |
 | `getContext()` | `Promise<ContextResult>` — applies the configured strategy (works for async strategies like `summarizeOldest`). |
 | `getContextSync()` | Sync `ContextResult`; throws if the configured strategy isn't guaranteed synchronous. |
@@ -212,6 +214,73 @@ See [`token-budget-vercel-ai`](../token-budget-vercel-ai) for a
 `streamText()` integration (`streamTextIntoBudget`), and the raw-SSE
 pattern is the same loop shown above with your own chunk-parsing in place
 of `textStream`.
+
+## Persistence
+
+No storage backend is bundled or required — `token-budget` stays
+storage-agnostic. `serialize()`/`deserialize()` give you a plain,
+JSON-serializable snapshot to put wherever you like:
+
+```ts
+const state = budget.serialize(); // sync, JSON.stringify-able
+await redis.set(`session:${id}`, JSON.stringify(state));
+
+// ...later, in a new process:
+const state = JSON.parse(await redis.get(`session:${id}`));
+const budget = TokenBudget.deserialize(state, {
+  tokenizer: myTokenizer, // re-supply anything that couldn't be serialized —
+  strategy: myStrategy,   // the tokenizer instance, strategy, messageOverhead, contentCounters
+});
+```
+
+`serialize()` captures messages (including synthetic summaries with full
+metadata) and the JSON-safe half of the config (`maxTokens`, `reserve`,
+`warningThreshold`, `charsPerToken`, ...); the tokenizer instance,
+strategy, and `messageOverhead`/`contentCounters` functions can't
+serialize generically, so `deserialize()`'s `overrides` is where you
+re-supply them — and can override any other config too (e.g. restoring a
+session under a bigger `maxTokens` for a new model). `deserialize()`
+reconstructs a fully-functional, behaviorally-identical instance: same
+next eviction decisions, same token counts.
+
+Open streams are excluded by default — resuming a network stream
+mid-flight is out of scope. Pass `serialize({ includeOpenStreams: true })`
+to include their accumulated partial content instead, each marked
+`wasInterrupted: true`; `deserialize()` restores them as still-open, and
+resuming or finalizing them (`endStream`/`abortStream`) is up to you.
+
+Snapshots carry a `schemaVersion`; `deserialize()` throws on a version
+newer than the installed package supports, and warns (not throws) on an
+older one — today that's a no-op beyond the warning, since v1 is the only
+version that has ever existed. A future breaking change to this shape
+will add a migration step and a changelog entry.
+
+### Auto-persisting without calling `serialize()` everywhere
+
+```ts
+const budget = new TokenBudget({
+  maxTokens: 128000,
+  onPersist: (state) => redis.set(`session:${id}`, JSON.stringify(state)),
+  persistDebounceMs: 500, // coalesce a burst of addMessage() calls into one write
+});
+```
+
+`onPersist` fires after every buffer mutation (`addMessage`, `removeMessage`,
+`editMessage`, `commit`, `clear`, and the streaming methods), debounced by
+`persistDebounceMs` (default `0` — call it synchronously every time).
+Debouncing is trailing-edge and never drops a call: rapid mutations
+coalesce into one `onPersist` carrying the *latest* state once the window
+elapses, they don't cancel it.
+
+### Storage recipes
+
+- **Redis**: `redis.set(key, JSON.stringify(state))` / `JSON.parse(await redis.get(key))` — as above. Consider a TTL matching your session lifetime.
+- **SQLite**: store `JSON.stringify(state)` in a `TEXT`/`JSON` column keyed by session id; `deserialize(JSON.parse(row.state))` on read.
+- **Browser `IndexedDB`**: structured-clone-safe as-is (`state` is plain objects/arrays/strings/numbers) — `store.put(state, sessionId)` directly, no `JSON.stringify` needed.
+
+These are patterns, not bundled adapters — a `token-budget-persistence-*`
+package family may follow if community demand justifies it (see
+[Roadmap](#roadmap-not-in-this-release)).
 
 ## Strategies
 
@@ -489,7 +558,6 @@ it just won't show up in explain reports.
 
 - **More framework adapters**: `token-budget-langchain`.
 - **Tokenizer adapters**: `token-budget-claude`.
-- **Persistence hooks**: `serialize()`/`deserialize()`.
 
 ## Non-goals
 

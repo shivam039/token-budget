@@ -14,6 +14,8 @@ import type {
   ContextResult,
   ExplainReport,
   Role,
+  SerializedState,
+  SerializedStream,
   Stats,
   Strategy,
   StrategyContext,
@@ -22,6 +24,31 @@ import type {
   TokenBudgetEvents,
   TokenBudgetEventName,
 } from './types.js';
+
+const SCHEMA_VERSION = 1;
+
+type ConsoleLike = { debug?: (...args: unknown[]) => void; warn?: (...args: unknown[]) => void };
+
+function getConsole(): ConsoleLike | undefined {
+  return (globalThis as { console?: ConsoleLike }).console;
+}
+
+function warnOnce(message: string): void {
+  getConsole()?.warn?.(`[token-budget] ${message}`);
+}
+
+// Node's `@types/node` and the DOM lib both declare setTimeout/clearTimeout
+// ambiently, but this package deliberately doesn't depend on either lib
+// (Node-only / browser-only) to stay universally runtime-agnostic — access
+// them the same way as `crypto`/`console` above, via a typed globalThis cast.
+interface TimerLike {
+  setTimeout: (fn: () => void, ms: number) => unknown;
+  clearTimeout: (handle: unknown) => void;
+}
+
+function getTimers(): TimerLike {
+  return globalThis as unknown as TimerLike;
+}
 
 interface StreamState {
   role: Role;
@@ -76,6 +103,10 @@ export class TokenBudget {
   private streams = new Map<string, StreamState>();
   private onStrategyDuringStream: 'skip' | 'error';
   private lastExplainReport: ExplainReport | undefined;
+  private charsPerTokenValue: number;
+  private onPersistHook: ((state: SerializedState) => void | Promise<void>) | undefined;
+  private persistDebounceMs: number;
+  private persistTimer: unknown;
 
   constructor(config: TokenBudgetConfig) {
     if (typeof config.maxTokens !== 'number' || !Number.isFinite(config.maxTokens) || config.maxTokens <= 0) {
@@ -101,6 +132,9 @@ export class TokenBudget {
     this.strategy = config.strategy ?? dropOldest();
     this.devMode = config.devMode ?? false;
     this.onStrategyDuringStream = config.onStrategyDuringStream ?? 'skip';
+    this.charsPerTokenValue = config.charsPerToken ?? 4;
+    this.onPersistHook = config.onPersist;
+    this.persistDebounceMs = config.persistDebounceMs ?? 0;
 
     const tokenizer =
       config.tokenizer && config.tokenizer !== 'estimate' ? config.tokenizer : createEstimateTokenizer(config.charsPerToken);
@@ -217,7 +251,7 @@ export class TokenBudget {
   clear(): void {
     this.messages = [];
     this.totalTokens = 0;
-    this.warned = false;
+    this.checkWarning();
   }
 
   /**
@@ -235,6 +269,85 @@ export class TokenBudget {
     this.messages = [...messages];
     this.totalTokens = this.messages.reduce((sum, m) => sum + (m.tokens ?? this.computeTokens(m)), 0);
     this.checkWarning();
+  }
+
+  /**
+   * Plain, JSON-serializable snapshot of this budget's state (FR2-6.1):
+   * messages (including synthetic summaries with full metadata) and the
+   * JSON-safe half of its config. Excludes the tokenizer instance,
+   * strategy, and `messageOverhead`/`contentCounters` functions — nothing
+   * generic can serialize a function; re-supply those via
+   * `deserialize()`'s `overrides` if you didn't use the defaults.
+   *
+   * Open streams are excluded by default (FR2-6.4) — resuming a network
+   * stream mid-flight is out of scope for this library. Pass
+   * `{ includeOpenStreams: true }` to include their accumulated partial
+   * content instead, each marked `wasInterrupted: true`; resuming or
+   * finalizing them on restore is left to the caller.
+   */
+  serialize(options: { includeOpenStreams?: boolean } = {}): SerializedState {
+    const state: SerializedState = {
+      schemaVersion: SCHEMA_VERSION,
+      maxTokens: this.maxTokensValue,
+      reserve: this.reserveValue,
+      warningThreshold: this.warningThreshold,
+      charsPerToken: this.charsPerTokenValue,
+      devMode: this.devMode,
+      onStrategyDuringStream: this.onStrategyDuringStream,
+      messages: this.getMessages(),
+    };
+    if (options.includeOpenStreams && this.streams.size > 0) {
+      state.streaming = [...this.streams.entries()].map(
+        ([id, s]): SerializedStream => ({ id, role: s.role, parts: [...s.parts], metadata: s.metadata, wasInterrupted: true }),
+      );
+    }
+    return state;
+  }
+
+  /**
+   * Reconstructs a fully-functional `TokenBudget` from a `serialize()`
+   * snapshot (FR2-6.2). `overrides` both fills in what couldn't be
+   * serialized (`tokenizer`, `strategy`, `messageOverhead`,
+   * `contentCounters`, `onPersist`, ...) and can override any of the
+   * JSON-safe config too — e.g. restoring a session but pointing at a
+   * different tokenizer instance, or a bigger `maxTokens` for a new model.
+   *
+   * Throws if `state.schemaVersion` is newer than this package supports.
+   * Warns (via `console.warn`) if it's older — today that's a no-op
+   * beyond the warning, since schema v1 is the only version that has
+   * existed; a future breaking change to this shape will add a migration
+   * step here and document it in the changelog.
+   */
+  static deserialize(state: SerializedState, overrides: Partial<TokenBudgetConfig> = {}): TokenBudget {
+    if (state.schemaVersion > SCHEMA_VERSION) {
+      throw new Error(
+        `TokenBudget.deserialize: state has schemaVersion ${state.schemaVersion}, newer than this package supports (${SCHEMA_VERSION}). Upgrade token-budget.`,
+      );
+    }
+    if (state.schemaVersion < SCHEMA_VERSION) {
+      warnOnce(
+        `TokenBudget.deserialize: state has schemaVersion ${state.schemaVersion}, older than this package's ${SCHEMA_VERSION}. ` +
+          'No migration was needed for this version, but check the changelog if you see unexpected behavior.',
+      );
+    }
+
+    const budget = new TokenBudget({
+      maxTokens: state.maxTokens,
+      reserve: state.reserve,
+      warningThreshold: state.warningThreshold,
+      charsPerToken: state.charsPerToken,
+      devMode: state.devMode,
+      onStrategyDuringStream: state.onStrategyDuringStream,
+      ...overrides,
+    });
+    budget.commit(state.messages);
+
+    for (const stream of state.streaming ?? []) {
+      budget.beginStream(stream.id, stream.role, stream.metadata);
+      for (const part of stream.parts) budget.appendStreamChunk(stream.id, part);
+    }
+
+    return budget;
   }
 
   /** Raw, unfiltered buffer contents in insertion order (FR-3.7). */
@@ -421,7 +534,9 @@ export class TokenBudget {
     }
   }
 
+  /** Post-mutation bookkeeping: called at the end of every state-mutating method. */
   private checkWarning(): void {
+    this.schedulePersist();
     const tokensUsed = this.totalTokens + this.streamingTokensTotal();
     const ratio = tokensUsed / this.effectiveBudget;
     if (ratio >= this.warningThreshold) {
@@ -432,6 +547,21 @@ export class TokenBudget {
     } else {
       this.warned = false;
     }
+  }
+
+  /** FR2-6.3: debounced (or immediate, if persistDebounceMs is 0) auto-persist after a mutation. */
+  private schedulePersist(): void {
+    if (!this.onPersistHook) return;
+    if (this.persistDebounceMs <= 0) {
+      void this.onPersistHook(this.serialize());
+      return;
+    }
+    const timers = getTimers();
+    if (this.persistTimer !== undefined) timers.clearTimeout(this.persistTimer);
+    this.persistTimer = timers.setTimeout(() => {
+      this.persistTimer = undefined;
+      void this.onPersistHook!(this.serialize());
+    }, this.persistDebounceMs);
   }
 
   private buildStrategyContext(tokensUsed: number, steps: StrategyStepTrace[]): StrategyContext {
@@ -492,12 +622,7 @@ export class TokenBudget {
       timestamp: Date.now(),
     };
     this.lastExplainReport = report;
-    if (this.devMode) {
-      const consoleObj: { debug?: (...args: unknown[]) => void } | undefined = (
-        globalThis as { console?: { debug?: (...args: unknown[]) => void } }
-      ).console;
-      consoleObj?.debug?.('[token-budget] decision', report);
-    }
+    if (this.devMode) getConsole()?.debug?.('[token-budget] decision', report);
     this.emitter.emit('decision', report);
 
     return {

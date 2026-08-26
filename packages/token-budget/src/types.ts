@@ -179,6 +179,36 @@ export type TokenBudgetEventName = keyof TokenBudgetEvents;
 export type AddMessageInput = Omit<BudgetMessage, 'id' | 'tokens' | 'timestamp'> &
   Partial<Pick<BudgetMessage, 'id' | 'timestamp'>>;
 
+/** A serialized open stream (Phase 2 §3.6), only present when `serialize({ includeOpenStreams: true })` was used. */
+export interface SerializedStream {
+  id: string;
+  role: Role;
+  parts: Array<string | ContentBlock>;
+  metadata?: Record<string, unknown>;
+  /** Always true — signals the caller that this content was mid-flight when serialized, not a finished message. */
+  wasInterrupted: true;
+}
+
+/**
+ * Plain, JSON-serializable snapshot of a `TokenBudget`'s state (FR2-6.1).
+ * Excludes anything that can't be serialized generically — the tokenizer
+ * instance, strategy, `messageOverhead`/`contentCounters` functions — the
+ * caller re-supplies those via `deserialize()`'s `overrides`.
+ */
+export interface SerializedState {
+  /** Schema version of this snapshot, for forward/backward-compatible migration (FR2-6.5). */
+  schemaVersion: number;
+  maxTokens: number;
+  reserve: number;
+  warningThreshold: number;
+  charsPerToken: number;
+  devMode: boolean;
+  onStrategyDuringStream: 'skip' | 'error';
+  messages: BudgetMessage[];
+  /** Open streams, only present when serialized with `includeOpenStreams: true` (FR2-6.4). */
+  streaming?: SerializedStream[];
+}
+
 export interface TokenBudgetConfig {
   /** Total context window size, in tokens. */
   maxTokens: number;
@@ -210,4 +240,19 @@ export interface TokenBudgetConfig {
    * content.
    */
   onStrategyDuringStream?: 'skip' | 'error';
+  /**
+   * Called (debounced by `persistDebounceMs`) with the current
+   * `serialize()`-shaped state after every buffer mutation, so an
+   * application can auto-persist without calling `serialize()` itself
+   * (FR2-6.3). No storage backend is bundled — write `state` wherever you
+   * like (Redis, SQLite, IndexedDB, ...).
+   */
+  onPersist?: (state: SerializedState) => void | Promise<void>;
+  /**
+   * Debounce window (ms) for `onPersist`, trailing-edge: rapid mutations
+   * coalesce into one call carrying the latest state once the window
+   * elapses — never dropped, just delayed (NFR2-7). Default 0: call
+   * `onPersist` synchronously after every mutation.
+   */
+  persistDebounceMs?: number;
 }

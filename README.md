@@ -40,12 +40,13 @@ Done so far, in the project's own suggested sprint order: the Anthropic
 and OpenAI framework adapters plus the shared adapter conformance suite
 (`token-budget/test-utils`); `explain()`/the `decision` event; streaming
 support (`beginStream`/`appendStreamChunk`/`endStream`/`abortStream`) plus
-`token-budget-vercel-ai`; `token-budget-tiktoken`; and recursive
-summarization (`maxSummaryDepth`, `onMaxDepthReached`, accumulating
-provenance, plus `budget.commit()` to make a strategized result stick
-across turns) with a 10,500-message soak test. Still to come: persistence
-hooks, `token-budget-langchain`, `token-budget-claude` + locale-aware
-estimation, performance/scale hardening, and ecosystem docs.
+`token-budget-vercel-ai`; `token-budget-tiktoken`; recursive summarization
+(`maxSummaryDepth`, `onMaxDepthReached`, accumulating provenance, plus
+`budget.commit()` to make a strategized result stick across turns) with a
+10,500-message soak test; and persistence (`serialize()`/`deserialize()`,
+`onPersist` with debouncing, `schemaVersion`). Still to come:
+`token-budget-langchain`, `token-budget-claude` + locale-aware estimation,
+performance/scale hardening, and ecosystem docs.
 
 ## License
 
