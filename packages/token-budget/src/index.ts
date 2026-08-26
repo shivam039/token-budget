@@ -24,6 +24,7 @@ export type {
   Strategy,
   StrategyContext,
   StrategyErrorInfo,
+  StreamingEstimate,
   StrategyStepTrace,
   TokenBudgetConfig,
   TokenBudgetEventName,

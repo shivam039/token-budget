@@ -103,6 +103,12 @@ export interface StrategyErrorInfo {
   recovered: boolean;
 }
 
+/** An in-progress streamed message's running, approximate token count (Phase 2 §3.3). */
+export interface StreamingEstimate {
+  id: string;
+  estimatedTokens: number;
+}
+
 export interface Stats {
   tokensUsed: number;
   tokensRemaining: number;
@@ -110,6 +116,8 @@ export interface Stats {
   reserve: number;
   messageCount: number;
   pinnedCount: number;
+  /** Open streams' running token estimates, included in `tokensUsed` (FR2-3.5). */
+  streaming: StreamingEstimate[];
 }
 
 export interface ContextResult {
@@ -191,4 +199,13 @@ export interface TokenBudgetConfig {
    * (FR2-4.5). Default false — never logs unless explicitly opted in.
    */
   devMode?: boolean;
+  /**
+   * What `getContext()`/`getContextSync()` do while a stream is open
+   * (FR2-3.7). Open-stream content is never visible to strategies either
+   * way (it isn't part of the buffer until `endStream`/`abortStream`).
+   * 'skip' (default) proceeds normally, ignoring the open stream. 'error'
+   * throws, refusing to build a context that doesn't reflect in-flight
+   * content.
+   */
+  onStrategyDuringStream?: 'skip' | 'error';
 }

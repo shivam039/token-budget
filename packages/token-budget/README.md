@@ -175,6 +175,43 @@ Writing a custom strategy? Call the optional `ctx.trace?.(step)` sink with
 the same shape to participate in `explain()` — see [Write your own
 strategy](#write-your-own-strategy).
 
+## Streaming
+
+For a message being streamed in token by token, track it incrementally
+instead of waiting for the full response:
+
+```ts
+budget.beginStream('msg_1', 'assistant');       // throws if 'msg_1' is already open
+for await (const chunk of textStream) {
+  budget.appendStreamChunk('msg_1', chunk);      // O(chunk length), never O(total so far)
+  console.log(budget.stats().tokensUsed);        // includes the running, approximate estimate
+}
+const message = budget.endStream('msg_1');       // exact recount; folds into the buffer as a normal message
+```
+
+- `stats().streaming` lists each open stream's id and running `estimatedTokens`,
+  and `stats().tokensUsed` already includes them — so `warning` can fire
+  mid-stream, before the response finishes.
+- The running estimate is the sum of each chunk's own token count — fast
+  (O(chunk length) per call) but only additive-approximate for tokenizers
+  whose token boundaries can span a chunk seam. `endStream()` always
+  reconciles to an exact count over the full accumulated content.
+- `budget.abortStream(id, 'discard' | 'keep-partial')` handles a client/network
+  abort mid-stream — `'discard'` (default) drops the partial message,
+  `'keep-partial'` finalizes what arrived so far.
+- An open stream is never visible to strategies — it isn't part of the
+  buffer until `endStream`/`abortStream` runs, so it can never be evicted
+  or summarized out from under you. `getContext()`/`getContextSync()`
+  proceed normally with a stream open (`onStrategyDuringStream: 'skip'`,
+  the default); set `onStrategyDuringStream: 'error'` if you'd rather they
+  throw than build a context that doesn't reflect in-flight content.
+- Multiple concurrent streams are supported — state is keyed per `id`.
+
+See [`token-budget-vercel-ai`](../token-budget-vercel-ai) for a
+`streamText()` integration (`streamTextIntoBudget`), and the raw-SSE
+pattern is the same loop shown above with your own chunk-parsing in place
+of `textStream`.
+
 ## Strategies
 
 All strategies implement:
@@ -294,10 +331,10 @@ new TokenBudget({
 ```
 
 > First-party tokenizer adapter packages (`token-budget-tiktoken`,
-> `token-budget-claude`) and further framework adapters
-> (`token-budget-langchain`, `token-budget-vercel-ai`) are still on the
-> roadmap as separate, thin peer packages. `token-budget-anthropic` and
-> `token-budget-openai` are available now — see [Framework
+> `token-budget-claude`) and the `token-budget-langchain` framework adapter
+> are still on the roadmap as separate, thin peer packages.
+> `token-budget-anthropic`, `token-budget-openai`, and
+> `token-budget-vercel-ai` are available now — see [Framework
 > adapters](#framework-adapters) below.
 
 ## Framework adapters
@@ -310,8 +347,11 @@ directions:
   Messages API (`toAnthropicMessages`, `fromAnthropicResponse`).
 - [`token-budget-openai`](../token-budget-openai) — OpenAI Chat
   Completions API (`toOpenAIMessages`, `fromOpenAIResponse`).
+- [`token-budget-vercel-ai`](../token-budget-vercel-ai) — Vercel AI SDK
+  `CoreMessage[]` conversion, `streamText()` integration, and an optional
+  `/react` `useTokenBudget()` hook.
 
-Both treat `token-budget` as a peer dependency and are each under 150 lines
+All three treat `token-budget` as a peer dependency and are each under 150 lines
 of actual conversion logic. If you're writing your own adapter (for
 another provider, or a community package), reuse the shared conformance
 suite this package exports:
@@ -388,9 +428,7 @@ it just won't show up in explain reports.
 
 ## Roadmap (not in this release)
 
-- **Streaming**: `beginStream`/`appendStreamChunk`/`endStream` for
-  incremental token accounting on a message being streamed in.
-- **More framework adapters**: `token-budget-langchain`, `token-budget-vercel-ai`.
+- **More framework adapters**: `token-budget-langchain`.
 - **Tokenizer adapters**: `token-budget-tiktoken`, `token-budget-claude`.
 - **Persistence hooks**: `serialize()`/`deserialize()`.
 

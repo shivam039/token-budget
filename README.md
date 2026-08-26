@@ -8,9 +8,10 @@ provider SDKs.
 
 | Package | Description |
 | --- | --- |
-| [`packages/token-budget`](./packages/token-budget) | Core: budget config, message buffer, strategies, events. Zero required runtime dependencies. |
+| [`packages/token-budget`](./packages/token-budget) | Core: budget config, message buffer, strategies, streaming, explain(), events. Zero required runtime dependencies. |
 | [`packages/token-budget-anthropic`](./packages/token-budget-anthropic) | Anthropic Messages API adapter. |
 | [`packages/token-budget-openai`](./packages/token-budget-openai) | OpenAI Chat Completions API adapter. |
+| [`packages/token-budget-vercel-ai`](./packages/token-budget-vercel-ai) | Vercel AI SDK adapter, streaming integration, optional React hook. |
 
 Each package is independently versioned and independently installable —
 `token-budget` is a peer dependency of the adapters, not a hard pin. See
@@ -34,14 +35,14 @@ Each package also has its own scripts (`npm run test --workspace=token-budget-an
 
 ## Roadmap
 
-This repo currently covers Phase 2 Sprint 1 of the project's sequencing:
-the Anthropic and OpenAI framework adapters, plus the shared adapter
-conformance suite (`token-budget/test-utils`) they're both tested against.
-Still to come, in the project's own suggested order: `explain()`/decision
-events, streaming support + `token-budget-vercel-ai`, `token-budget-tiktoken`,
-recursive summarization, persistence hooks, `token-budget-langchain`,
-`token-budget-claude` + locale-aware estimation, performance/scale
-hardening, and ecosystem docs.
+Done so far, in the project's own suggested sprint order: the Anthropic
+and OpenAI framework adapters plus the shared adapter conformance suite
+(`token-budget/test-utils`); `explain()`/the `decision` event; and
+streaming support (`beginStream`/`appendStreamChunk`/`endStream`/
+`abortStream`) plus `token-budget-vercel-ai`. Still to come:
+`token-budget-tiktoken`, recursive summarization, persistence hooks,
+`token-budget-langchain`, `token-budget-claude` + locale-aware estimation,
+performance/scale hardening, and ecosystem docs.
 
 ## License
 

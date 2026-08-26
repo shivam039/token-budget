@@ -10,8 +10,10 @@ import {
 import type {
   AddMessageInput,
   BudgetMessage,
+  ContentBlock,
   ContextResult,
   ExplainReport,
+  Role,
   Stats,
   Strategy,
   StrategyContext,
@@ -20,6 +22,39 @@ import type {
   TokenBudgetEvents,
   TokenBudgetEventName,
 } from './types.js';
+
+interface StreamState {
+  role: Role;
+  parts: Array<string | ContentBlock>;
+  metadata?: Record<string, unknown>;
+  estimatedTokens: number;
+}
+
+/**
+ * Joins accumulated stream chunks into final message content: plain text
+ * throughout collapses to a single string; any content block anywhere
+ * promotes the whole thing to `ContentBlock[]`, merging adjacent string
+ * chunks into single text blocks along the way.
+ */
+function foldStreamParts(parts: Array<string | ContentBlock>): BudgetMessage['content'] {
+  if (parts.every((part) => typeof part === 'string')) return (parts as string[]).join('');
+
+  const blocks: ContentBlock[] = [];
+  let buffer = '';
+  for (const part of parts) {
+    if (typeof part === 'string') {
+      buffer += part;
+      continue;
+    }
+    if (buffer) {
+      blocks.push({ type: 'text', text: buffer });
+      buffer = '';
+    }
+    blocks.push(part);
+  }
+  if (buffer) blocks.push({ type: 'text', text: buffer });
+  return blocks;
+}
 
 /**
  * Manages a growing message buffer's token accounting against a fixed
@@ -38,6 +73,8 @@ export class TokenBudget {
   private warned = false;
   private idCounter = 0;
   private devMode: boolean;
+  private streams = new Map<string, StreamState>();
+  private onStrategyDuringStream: 'skip' | 'error';
   private lastExplainReport: ExplainReport | undefined;
 
   constructor(config: TokenBudgetConfig) {
@@ -63,6 +100,7 @@ export class TokenBudget {
     this.warningThreshold = warningThreshold;
     this.strategy = config.strategy ?? dropOldest();
     this.devMode = config.devMode ?? false;
+    this.onStrategyDuringStream = config.onStrategyDuringStream ?? 'skip';
 
     const tokenizer =
       config.tokenizer && config.tokenizer !== 'estimate' ? config.tokenizer : createEstimateTokenizer(config.charsPerToken);
@@ -204,20 +242,77 @@ export class TokenBudget {
   }
 
   stats(): Stats {
+    const streaming = [...this.streams.entries()].map(([id, s]) => ({ id, estimatedTokens: s.estimatedTokens }));
+    const tokensUsed = this.totalTokens + this.streamingTokensTotal();
     return {
-      tokensUsed: this.totalTokens,
-      tokensRemaining: Math.max(0, this.effectiveBudget - this.totalTokens),
+      tokensUsed,
+      tokensRemaining: Math.max(0, this.effectiveBudget - tokensUsed),
       maxTokens: this.maxTokensValue,
       reserve: this.reserveValue,
       messageCount: this.messages.length,
       pinnedCount: this.messages.reduce((n, m) => n + (m.pinned ? 1 : 0), 0),
+      streaming,
     };
+  }
+
+  // ---- streaming (Phase 2 §3.3) -------------------------------------------
+
+  /** Registers a new in-progress streamed message. Throws if `id` is already open (FR2-3.1). */
+  beginStream(id: string, role: Role, metadata?: Record<string, unknown>): void {
+    if (this.streams.has(id)) {
+      throw new Error(`TokenBudget: stream "${id}" is already open. Call endStream()/abortStream() first, or use a different id.`);
+    }
+    this.streams.set(id, { role, parts: [], metadata, estimatedTokens: 0 });
+  }
+
+  /**
+   * Appends a chunk to an open stream and updates its running, approximate
+   * token estimate — O(chunk length), never O(total accumulated length)
+   * per call (FR2-3.9): each chunk is counted on its own and summed, which
+   * is fast but only additive-approximate for tokenizers whose token
+   * boundaries can span chunks; `endStream()` reconciles to an exact count.
+   */
+  appendStreamChunk(id: string, chunk: string | ContentBlock): void {
+    const stream = this.streams.get(id);
+    if (!stream) throw new Error(`TokenBudget: no open stream "${id}". Call beginStream() first.`);
+    stream.parts.push(chunk);
+    stream.estimatedTokens += this.countChunkTokens(chunk);
+    this.checkWarning();
+  }
+
+  /**
+   * Finalizes a stream: exact recount over the full accumulated content,
+   * reconciling any drift from the running estimate, and folds it into the
+   * main buffer as a normal message (FR2-3.3).
+   */
+  endStream(id: string): BudgetMessage {
+    const stream = this.streams.get(id);
+    if (!stream) throw new Error(`TokenBudget: no open stream "${id}".`);
+    this.streams.delete(id);
+    const content = foldStreamParts(stream.parts);
+    return this.addMessage({ id, role: stream.role, content, metadata: stream.metadata });
+  }
+
+  /**
+   * Handles a client/network abort mid-stream (FR2-3.4). `'discard'`
+   * (default) drops the partial message entirely; `'keep-partial'`
+   * finalizes whatever content was received so far, same as `endStream`.
+   */
+  abortStream(id: string, policy: 'discard' | 'keep-partial' = 'discard'): void {
+    if (!this.streams.has(id)) throw new Error(`TokenBudget: no open stream "${id}".`);
+    if (policy === 'keep-partial') {
+      this.endStream(id);
+      return;
+    }
+    this.streams.delete(id);
+    this.checkWarning();
   }
 
   // ---- context retrieval ---------------------------------------------------
 
   /** Strategy-applied, ready-to-send context (FR-3.7, FR-5.1). Async: strategies may be async. */
   async getContext(): Promise<ContextResult> {
+    this.assertNoOpenStreamsIfConfigured();
     const original = [...this.messages];
     const steps: StrategyStepTrace[] = [];
     const ctx = this.buildStrategyContext(this.totalTokens, steps);
@@ -238,6 +333,7 @@ export class TokenBudget {
    * sync (FR-5.2).
    */
   getContextSync(): ContextResult {
+    this.assertNoOpenStreamsIfConfigured();
     if (!this.strategy.sync) {
       throw new Error(
         `TokenBudget: configured strategy "${this.strategy.name}" is not synchronous (strategy.sync === false); ` +
@@ -287,8 +383,30 @@ export class TokenBudget {
     return countMessageTokens(message, this.counters);
   }
 
+  private countChunkTokens(chunk: string | ContentBlock): number {
+    if (typeof chunk === 'string') return this.counters.tokenizer.count(chunk);
+    const counter = this.counters.contentCounters[chunk.type];
+    return counter ? counter(chunk) : this.counters.tokenizer.count(JSON.stringify(chunk));
+  }
+
+  private streamingTokensTotal(): number {
+    let sum = 0;
+    for (const stream of this.streams.values()) sum += stream.estimatedTokens;
+    return sum;
+  }
+
+  private assertNoOpenStreamsIfConfigured(): void {
+    if (this.onStrategyDuringStream === 'error' && this.streams.size > 0) {
+      throw new Error(
+        `TokenBudget: ${this.streams.size} stream(s) still open (onStrategyDuringStream: 'error'); ` +
+          'call endStream()/abortStream() on each before building a context, or configure onStrategyDuringStream: "skip".',
+      );
+    }
+  }
+
   private checkWarning(): void {
-    const ratio = this.totalTokens / this.effectiveBudget;
+    const tokensUsed = this.totalTokens + this.streamingTokensTotal();
+    const ratio = tokensUsed / this.effectiveBudget;
     if (ratio >= this.warningThreshold) {
       if (!this.warned) {
         this.warned = true;
