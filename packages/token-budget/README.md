@@ -453,10 +453,10 @@ new TokenBudget({
 });
 ```
 
-> `token-budget-claude` and the `token-budget-langchain` framework adapter
-> are still on the roadmap as separate, thin peer packages.
-> `token-budget-anthropic`, `token-budget-openai`, `token-budget-vercel-ai`,
-> and `token-budget-tiktoken` are available now — see [Framework
+> `token-budget-claude` is still on the roadmap as a separate, thin peer
+> package. `token-budget-anthropic`, `token-budget-openai`,
+> `token-budget-vercel-ai`, `token-budget-tiktoken`, and
+> `token-budget-langchain` are available now — see [Framework
 > adapters](#framework-adapters) below.
 
 ## Tokenizer adapters
@@ -478,11 +478,15 @@ directions:
 - [`token-budget-vercel-ai`](../token-budget-vercel-ai) — Vercel AI SDK
   `CoreMessage[]` conversion, `streamText()` integration, and an optional
   `/react` `useTokenBudget()` hook.
+- [`token-budget-langchain`](../token-budget-langchain) — LangChain.js
+  `BaseMessage[]` conversion and a `TokenBudgetMemory` class implementing
+  the `BaseMemory` contract.
 
-All three treat `token-budget` as a peer dependency and are each under 150 lines
-of actual conversion logic. If you're writing your own adapter (for
-another provider, or a community package), reuse the shared conformance
-suite this package exports:
+All four treat `token-budget` as a peer dependency and are each under 150
+lines of actual conversion logic (`token-budget-langchain`'s
+`TokenBudgetMemory` adds a bit more surface for its own contract). If
+you're writing your own adapter (for another provider, or a community
+package), reuse the shared conformance suite this package exports:
 
 ```ts
 import { runAdapterConformanceSuite } from 'token-budget/test-utils';
@@ -556,8 +560,10 @@ it just won't show up in explain reports.
 
 ## Roadmap (not in this release)
 
-- **More framework adapters**: `token-budget-langchain`.
 - **Tokenizer adapters**: `token-budget-claude`.
+- **Locale-aware estimation**: an `estimatorProfile` option on the heuristic estimator.
+- **Performance/scale hardening**: a published benchmark suite at 1k/10k/50k/100k messages.
+- **Ecosystem docs**: a strategy cookbook, `CONTRIBUTING.md`, and a compatibility matrix.
 
 ## Non-goals
 

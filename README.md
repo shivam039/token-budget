@@ -13,6 +13,7 @@ provider SDKs.
 | [`packages/token-budget-openai`](./packages/token-budget-openai) | OpenAI Chat Completions API adapter. |
 | [`packages/token-budget-vercel-ai`](./packages/token-budget-vercel-ai) | Vercel AI SDK adapter, streaming integration, optional React hook. |
 | [`packages/token-budget-tiktoken`](./packages/token-budget-tiktoken) | Exact OpenAI-family tokenizer (pure-JS by default, opt-in native/WASM path). |
+| [`packages/token-budget-langchain`](./packages/token-budget-langchain) | LangChain.js adapter: `BaseMessage[]` conversion and a `TokenBudgetMemory` class. |
 
 Each package is independently versioned and independently installable —
 `token-budget` is a peer dependency of the adapters, not a hard pin. See
@@ -43,10 +44,11 @@ support (`beginStream`/`appendStreamChunk`/`endStream`/`abortStream`) plus
 `token-budget-vercel-ai`; `token-budget-tiktoken`; recursive summarization
 (`maxSummaryDepth`, `onMaxDepthReached`, accumulating provenance, plus
 `budget.commit()` to make a strategized result stick across turns) with a
-10,500-message soak test; and persistence (`serialize()`/`deserialize()`,
-`onPersist` with debouncing, `schemaVersion`). Still to come:
-`token-budget-langchain`, `token-budget-claude` + locale-aware estimation,
-performance/scale hardening, and ecosystem docs.
+10,500-message soak test; persistence (`serialize()`/`deserialize()`,
+`onPersist` with debouncing, `schemaVersion`); and `token-budget-langchain`
+(`BaseMessage[]` conversion + a `TokenBudgetMemory` class). Still to come:
+`token-budget-claude` + locale-aware estimation, performance/scale
+hardening, and ecosystem docs.
 
 ## License
 
