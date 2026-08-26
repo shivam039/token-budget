@@ -1,7 +1,7 @@
 {
   "name": "token-budget",
   "version": "0.1.0",
-  "description": "Model-agnostic token accounting and eviction strategies for multi-turn LLM conversations.",
+  "description": "Keep multi-turn LLM conversations inside the context window: pluggable eviction/summarization strategies, cost accounting, and an explain() trace, for any model or framework.",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
@@ -38,9 +38,15 @@
   "keywords": [
     "llm",
     "tokens",
+    "token-counting",
     "context-window",
+    "context-management",
+    "compaction",
     "openai",
     "anthropic",
+    "langchain",
+    "vercel-ai",
+    "ai-agents",
     "chat"
   ],
   "license": "MIT",
