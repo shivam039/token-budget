@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { TokenBudget } from 'token-budget';
+import { runTokenizerConformanceSuite } from 'token-budget/test-utils';
 import { createTiktokenTokenizer, resolveEncodingForModel } from '../src/index.js';
 
 describe('resolveEncodingForModel', () => {
@@ -66,3 +67,8 @@ describe('createTiktokenTokenizer', () => {
     expect(msg.tokens).toBeGreaterThan(0);
   });
 });
+
+// FR2-9.3: run the shared tokenizer conformance suite against the real
+// cl100k_base-backed tokenizer (resolved once, up front, since the suite
+// itself is synchronous).
+runTokenizerConformanceSuite('tiktoken (cl100k_base)', await createTiktokenTokenizer({ encoding: 'cl100k_base' }));

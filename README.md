@@ -20,6 +20,12 @@ Each package is independently versioned and independently installable —
 `token-budget` is a peer dependency of the adapters, not a hard pin. See
 each package's own README for its API, usage, and known limitations.
 
+## Docs
+
+- [`packages/token-budget/COOKBOOK.md`](./packages/token-budget/COOKBOOK.md) — four tested configuration recipes (customer-support bot, coding agent, RAG chat, long-form writing assistant).
+- [`CONTRIBUTING.md`](./CONTRIBUTING.md) — how to add a community tokenizer, strategy, or framework adapter; the `token-budget-{tokenizer,strategy,adapter}-*` naming convention; and the review bar.
+- [`COMPATIBILITY.md`](./COMPATIBILITY.md) — what each adapter/tokenizer package is tested against, and why they use structural typing instead of a real SDK dependency.
+
 ## Development
 
 This is an npm workspaces monorepo — one `npm install` at the root wires
@@ -56,7 +62,13 @@ benchmark suite at 1k/10k/50k/100k messages
 (`test/soak/memory.soak.ts`), a scheduled (not per-commit) soak CI
 workflow, and a fix for an O(n²) `removeMessage` regression found while
 benchmarking (Map-backed message storage instead of an array — internal
-only, no public API change). Still to come: ecosystem docs.
+only, no public API change); and ecosystem/community docs — a tokenizer
+conformance suite (`runTokenizerConformanceSuite`, alongside the existing
+adapter suite, both now dogfooded by every first-party tokenizer/adapter
+package's own tests), a four-recipe strategy cookbook with a real test per
+recipe, `CONTRIBUTING.md` (community package naming convention and review
+bar), and a compatibility matrix. All eleven sprints from the Phase 2 spec
+are complete.
 
 ## License
 

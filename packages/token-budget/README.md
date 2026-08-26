@@ -282,7 +282,8 @@ elapses, they don't cancel it.
 
 These are patterns, not bundled adapters — a `token-budget-persistence-*`
 package family may follow if community demand justifies it (see
-[Roadmap](#roadmap-not-in-this-release)).
+[`CONTRIBUTING.md`](../../CONTRIBUTING.md) for the community package
+naming convention).
 
 ## Strategies
 
@@ -509,6 +510,22 @@ new TokenBudget({
   its README's accuracy disclaimer before relying on it for anything
   precision-sensitive.
 
+Writing your own tokenizer package? Reuse the shared conformance suite
+this package exports, the same way the two above do in their own test
+suites:
+
+```ts
+import { runTokenizerConformanceSuite } from 'token-budget/test-utils';
+
+runTokenizerConformanceSuite('my-tokenizer', await createMyTokenizer());
+```
+
+It verifies non-negative integer counts, determinism, rough monotonicity
+with text length, `encode()`/`count()` self-consistency (when `encode` is
+provided), and drop-in compatibility as a `TokenBudget` `tokenizer` option.
+See [`CONTRIBUTING.md`](../../CONTRIBUTING.md) at the repo root for the
+full checklist and the community package naming convention.
+
 ## Framework adapters
 
 Thin, independently-versioned packages that convert `token-budget`'s
@@ -546,7 +563,17 @@ runAdapterConformanceSuite({
 It verifies round-trip fidelity, tool-call/tool-result atomicity,
 pinned-message handling, and post-conversion token accounting — call it
 inside your own `*.test.ts` file (requires `vitest`, an optional peer
-dependency of this export).
+dependency of this export). See [`CONTRIBUTING.md`](../../CONTRIBUTING.md)
+at the repo root for the full checklist and the community package naming
+convention, and [`COMPATIBILITY.md`](../../COMPATIBILITY.md) for how
+adapters document what they're tested against without pinning the real
+SDK as a dependency.
+
+## Cookbook
+
+Four common application shapes — a customer-support bot, a coding agent, a
+RAG chat app, and a long-form writing assistant — each with a runnable,
+tested configuration recipe: see [`COOKBOOK.md`](./COOKBOOK.md).
 
 ## Write your own strategy
 
@@ -654,9 +681,6 @@ own bookkeeping.)
   tests run in CI on a schedule (weekly), not on every commit — see
   [`.github/workflows/soak.yml`](../../.github/workflows/soak.yml) at the
   repo root.
-
-## Roadmap (not in this release)
-- **Ecosystem docs**: a strategy cookbook, `CONTRIBUTING.md`, and a compatibility matrix.
 
 ## Non-goals
 
