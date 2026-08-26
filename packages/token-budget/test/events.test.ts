@@ -92,3 +92,26 @@ describe('strategy-error event', () => {
     expect(handler.mock.calls[0][0].strategyName).toBe('throwing');
   });
 });
+
+describe('listenerCount', () => {
+  it('reflects on()/off() and the returned unsubscribe function', () => {
+    const budget = new TokenBudget({ maxTokens: 1000 });
+    expect(budget.listenerCount('warning')).toBe(0);
+    const handlerA = vi.fn();
+    const handlerB = vi.fn();
+    const unsubscribeA = budget.on('warning', handlerA);
+    budget.on('warning', handlerB);
+    expect(budget.listenerCount('warning')).toBe(2);
+    unsubscribeA();
+    expect(budget.listenerCount('warning')).toBe(1);
+    budget.off('warning', handlerB);
+    expect(budget.listenerCount('warning')).toBe(0);
+  });
+
+  it('tracks each event independently', () => {
+    const budget = new TokenBudget({ maxTokens: 1000 });
+    budget.on('warning', () => {});
+    expect(budget.listenerCount('warning')).toBe(1);
+    expect(budget.listenerCount('evicted')).toBe(0);
+  });
+});

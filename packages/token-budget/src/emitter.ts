@@ -19,6 +19,11 @@ export class Emitter<Events extends { [K in keyof Events]: (...args: any[]) => v
     this.listeners.get(event)?.delete(handler);
   }
 
+  /** Number of currently-registered listeners for `event` (0 if none) — useful for leak-checking. */
+  listenerCount<K extends keyof Events>(event: K): number {
+    return this.listeners.get(event)?.size ?? 0;
+  }
+
   emit<K extends keyof Events>(event: K, ...args: Parameters<Events[K]>): void {
     const set = this.listeners.get(event);
     if (!set || set.size === 0) return;

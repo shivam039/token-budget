@@ -50,8 +50,13 @@ support (`beginStream`/`appendStreamChunk`/`endStream`/`abortStream`) plus
 (`BaseMessage[]` conversion + a `TokenBudgetMemory` class); and
 `token-budget-claude` (with a `calibrate()` utility) + locale-aware
 estimation (`estimatorProfile`, real cl100k_base-measured ratios for
-`cjk`/`cyrillic`). Still to come: performance/scale hardening and
-ecosystem docs.
+`cjk`/`cyrillic`); and performance/scale hardening — a published
+benchmark suite at 1k/10k/50k/100k messages
+(`test/soak/scale.soak.ts`), a multi-day-session memory/leak soak test
+(`test/soak/memory.soak.ts`), a scheduled (not per-commit) soak CI
+workflow, and a fix for an O(n²) `removeMessage` regression found while
+benchmarking (Map-backed message storage instead of an array — internal
+only, no public API change). Still to come: ecosystem docs.
 
 ## License
 

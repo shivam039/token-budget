@@ -41,6 +41,19 @@ describe('TokenBudget buffer management', () => {
     expect(msg.id).toBe('custom-1');
   });
 
+  it('throws when a caller-supplied id collides with an existing message', () => {
+    const budget = new TokenBudget({ maxTokens: 1000 });
+    budget.addMessage({ id: 'dup', role: 'user', content: 'first' });
+    expect(() => budget.addMessage({ id: 'dup', role: 'user', content: 'second' })).toThrow();
+  });
+
+  it('allows reusing an id after the original message was removed', () => {
+    const budget = new TokenBudget({ maxTokens: 1000 });
+    budget.addMessage({ id: 'reused', role: 'user', content: 'first' });
+    budget.removeMessage('reused');
+    expect(() => budget.addMessage({ id: 'reused', role: 'user', content: 'second' })).not.toThrow();
+  });
+
   it('incrementally tracks tokensUsed across add/remove/edit', () => {
     const budget = new TokenBudget({ maxTokens: 1000 });
     const a = budget.addMessage({ role: 'user', content: '12345678' }); // 2 + 4 = 6
@@ -62,6 +75,14 @@ describe('TokenBudget buffer management', () => {
   it('editMessage throws for an unknown id', () => {
     const budget = new TokenBudget({ maxTokens: 1000 });
     expect(() => budget.editMessage('nope', { content: 'x' })).toThrow();
+  });
+
+  it('editMessage preserves the message\'s original position in insertion order', () => {
+    const budget = new TokenBudget({ maxTokens: 1000 });
+    const a = budget.addMessage({ role: 'user', content: 'one' });
+    budget.addMessage({ role: 'user', content: 'two' });
+    budget.editMessage(a.id, { content: 'one (edited)' });
+    expect(budget.getMessages().map((m) => m.content)).toEqual(['one (edited)', 'two']);
   });
 
   it('clear() resets messages and totals', () => {

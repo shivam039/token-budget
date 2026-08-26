@@ -1,0 +1,27 @@
+name: Soak tests
+
+# FR2-8.3: long-running soak tests (10k+ message summarization, scale
+# benchmarks at up to 100k messages, multi-day-session memory/leak checks)
+# run on a schedule, not on every commit — they're too slow for per-push
+# CI and their value is in catching drift over time, not gating a single
+# change.
+
+on:
+  schedule:
+    - cron: '0 6 * * 1' # every Monday, 06:00 UTC
+  workflow_dispatch: {} # allow manual runs too
+
+jobs:
+  soak:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build --workspace=token-budget
+      - name: Run soak tests
+        run: node --expose-gc node_modules/.bin/vitest run --config vitest.soak.config.ts
+        working-directory: packages/token-budget
