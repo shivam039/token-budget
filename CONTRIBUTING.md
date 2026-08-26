@@ -29,7 +29,8 @@ and a conformance suite to pass before it's considered done.
 
 First-party packages published before this convention was written —
 `token-budget-anthropic`, `token-budget-openai`, `token-budget-vercel-ai`,
-`token-budget-tiktoken`, `token-budget-langchain`, `token-budget-claude` —
+`token-budget-tiktoken`, `token-budget-langchain`, `token-budget-claude`,
+`token-budget-pricing`, `token-budget-otel`, `token-budget-embeddings` —
 predate it and keep their existing names rather than being renamed; the
 convention applies going forward, to new packages.
 

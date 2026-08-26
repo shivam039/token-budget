@@ -15,6 +15,11 @@ provider SDKs.
 | [`packages/token-budget-tiktoken`](./packages/token-budget-tiktoken) | Exact OpenAI-family tokenizer (pure-JS by default, opt-in native/WASM path). |
 | [`packages/token-budget-langchain`](./packages/token-budget-langchain) | LangChain.js adapter: `BaseMessage[]` conversion and a `TokenBudgetMemory` class. |
 | [`packages/token-budget-claude`](./packages/token-budget-claude) | Best-effort Claude tokenizer approximation, with a `calibrate()` utility. |
+| [`packages/token-budget-pricing`](./packages/token-budget-pricing) | Static per-model pricing table / `CostModel` for cost accounting. |
+| [`packages/token-budget-otel`](./packages/token-budget-otel) | OpenTelemetry instrumentation: spans + token/cost/eviction counters. |
+| [`packages/token-budget-embeddings`](./packages/token-budget-embeddings) | Reference cosine-similarity `Scorer` for the `semanticRelevance` strategy. |
+| [`packages/token-budget-devtools`](./packages/token-budget-devtools) | Local Vite app for visually inspecting a `serialize()` dump. Not published to npm. |
+| [`packages/token-budget-py`](./packages/token-budget-py) | Python port. **Work in progress** — partial API, see its own README for exact scope. |
 
 Each package is independently versioned and independently installable —
 `token-budget` is a peer dependency of the adapters, not a hard pin. See
@@ -69,6 +74,18 @@ package's own tests), a four-recipe strategy cookbook with a real test per
 recipe, `CONTRIBUTING.md` (community package naming convention and review
 bar), and a compatibility matrix. All eleven sprints from the Phase 2 spec
 are complete.
+
+Phase 3 (in progress): cost/usage accounting (`costModel`, `maxCost`,
+`getUsageReport()`/`exportUsageJSON()`/`exportUsageCSV()`) plus
+`token-budget-pricing`; `token-budget-otel` instrumentation;
+`semanticRelevance` (hybrid semantic/recency/priority scoring, a scoring
+timeout with fallback, per-instance score caching) plus
+`token-budget-embeddings`; governance hooks (`redactor`, `auditLog`/
+`onAuditEvent`, `tags`); and `token-budget-devtools`, a local Vite app for
+inspecting a `serialize()` dump. `token-budget-py` (a Python port) is
+started but explicitly partial — see its own README for exact scope.
+Still to come: ecosystem registry/scorer conformance suite, a VS Code
+extension, a docs playground, and 1.0 release readiness.
 
 ## License
 

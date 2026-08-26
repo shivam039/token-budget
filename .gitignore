@@ -3,3 +3,10 @@ dist/
 coverage/
 *.log
 .DS_Store
+
+# Python (packages/token-budget-py)
+__pycache__/
+*.pyc
+.venv/
+*.egg-info/
+.pytest_cache/
