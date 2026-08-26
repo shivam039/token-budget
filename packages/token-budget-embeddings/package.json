@@ -1,7 +1,16 @@
 {
   "name": "token-budget-embeddings",
   "version": "0.1.0",
-  "description": "Reference cosine-similarity Scorer for token-budget's semanticRelevance strategy — bring your own embedding function.",
+  "description": "Reference cosine-similarity Scorer for token-budget's semanticRelevance strategy \u2014 bring your own embedding function.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shivam039/token-budget.git",
+    "directory": "packages/token-budget-embeddings"
+  },
+  "homepage": "https://github.com/shivam039/token-budget/tree/main/packages/token-budget-embeddings#readme",
+  "bugs": {
+    "url": "https://github.com/shivam039/token-budget/issues"
+  },
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",

@@ -1,0 +1,21 @@
+{
+  "name": "token-budget-bench",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Reproducible performance benchmarks for token-budget, run against real competitors — not published to npm.",
+  "type": "module",
+  "scripts": {
+    "bench": "node run-all.mjs",
+    "bench:tokenizer": "node tokenizer-bench.mjs",
+    "bench:context": "node context-management-bench.mjs",
+    "bench:context:realistic": "node context-management-realistic-bench.mjs",
+    "bench:incremental": "node incremental-accounting-bench.mjs"
+  },
+  "devDependencies": {
+    "token-budget": "^0.1.0",
+    "token-budget-tiktoken": "^0.1.0",
+    "gpt-tokenizer": "^4.0.0",
+    "llm-token-counter": "^1.0.0",
+    "@langchain/core": "^1.2.0"
+  }
+}

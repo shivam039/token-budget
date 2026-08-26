@@ -3,6 +3,15 @@
   "version": "0.1.0",
   "private": true,
   "description": "Local Vite app for visually inspecting a token-budget serialize() dump: buffer contents, pinned/eviction state.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shivam039/token-budget.git",
+    "directory": "packages/token-budget-devtools"
+  },
+  "homepage": "https://github.com/shivam039/token-budget/tree/main/packages/token-budget-devtools#readme",
+  "bugs": {
+    "url": "https://github.com/shivam039/token-budget/issues"
+  },
   "type": "module",
   "scripts": {
     "build": "vite build",

@@ -2,6 +2,15 @@
   "name": "token-budget-tiktoken",
   "version": "0.1.0",
   "description": "tiktoken Tokenizer adapter for token-budget, backed by pure-JS js-tiktoken by default (with an optional Node-only native/WASM path).",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shivam039/token-budget.git",
+    "directory": "packages/token-budget-tiktoken"
+  },
+  "homepage": "https://github.com/shivam039/token-budget/tree/main/packages/token-budget-tiktoken#readme",
+  "bugs": {
+    "url": "https://github.com/shivam039/token-budget/issues"
+  },
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
