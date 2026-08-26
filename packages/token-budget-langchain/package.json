@@ -2,6 +2,15 @@
   "name": "token-budget-langchain",
   "version": "0.1.0",
   "description": "LangChain.js adapter for token-budget: BaseMessage[] conversion and a TokenBudgetMemory class.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shivam039/token-budget.git",
+    "directory": "packages/token-budget-langchain"
+  },
+  "homepage": "https://github.com/shivam039/token-budget/tree/main/packages/token-budget-langchain#readme",
+  "bugs": {
+    "url": "https://github.com/shivam039/token-budget/issues"
+  },
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",

@@ -2,6 +2,15 @@
   "name": "token-budget",
   "version": "0.1.0",
   "description": "Keep multi-turn LLM conversations inside the context window: pluggable eviction/summarization strategies, cost accounting, and an explain() trace, for any model or framework.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shivam039/token-budget.git",
+    "directory": "packages/token-budget"
+  },
+  "homepage": "https://github.com/shivam039/token-budget/tree/main/packages/token-budget#readme",
+  "bugs": {
+    "url": "https://github.com/shivam039/token-budget/issues"
+  },
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",

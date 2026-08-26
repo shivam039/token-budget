@@ -2,6 +2,15 @@
   "name": "token-budget-pricing",
   "version": "0.1.0",
   "description": "Static per-model pricing lookup table and CostModel for token-budget cost accounting.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shivam039/token-budget.git",
+    "directory": "packages/token-budget-pricing"
+  },
+  "homepage": "https://github.com/shivam039/token-budget/tree/main/packages/token-budget-pricing#readme",
+  "bugs": {
+    "url": "https://github.com/shivam039/token-budget/issues"
+  },
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",

@@ -2,6 +2,15 @@
   "name": "token-budget-otel",
   "version": "0.1.0",
   "description": "OpenTelemetry instrumentation for token-budget: spans for strategy decisions, counters for tokens/cost/evictions.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shivam039/token-budget.git",
+    "directory": "packages/token-budget-otel"
+  },
+  "homepage": "https://github.com/shivam039/token-budget/tree/main/packages/token-budget-otel#readme",
+  "bugs": {
+    "url": "https://github.com/shivam039/token-budget/issues"
+  },
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",

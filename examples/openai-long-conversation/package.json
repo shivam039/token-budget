@@ -1,0 +1,18 @@
+{
+  "name": "example-openai-long-conversation",
+  "private": true,
+  "version": "0.0.0",
+  "description": "A long conversation kept inside its context window with token-budget, sent to the OpenAI Chat Completions API.",
+  "type": "module",
+  "scripts": {
+    "start": "tsx src/index.ts"
+  },
+  "dependencies": {
+    "token-budget": "^0.1.0",
+    "token-budget-openai": "^0.1.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
+  }
+}

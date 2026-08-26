@@ -43,6 +43,97 @@ gives you the full reasoning trail. `pinned: true` means the system
 prompt survives every eviction strategy, and tool-call/tool-result pairs
 are always kept or dropped together — no dangling tool results.
 
+## What this actually does
+
+```
+Without context management
+
+  conversation  ████████████████████████████████████████████████ 💥
+                                                    context window exceeded —
+                                                    hard error, or silent truncation
+
+With token-budget
+
+  conversation  ██████████████████████░░░░░░░░░░░░░░░░░░░░░░░░░░
+                                      │
+                                      └─ budget enforcement kicks in here
+
+  ✓ pinned system prompt — never evicted, by any strategy
+  ✓ tool-call / tool-result pairs — always kept or dropped together
+  ✓ every eviction — named, with a reason, via explain()
+```
+
+## `explain()` — see exactly what happened and why
+
+Every `getContext()`/`getContextSync()` call is fully explainable — this
+is real output from `budget.explain()`, not illustrative pseudo-JSON:
+
+```json
+{
+  "strategyApplied": "sliding-window",
+  "tokensBefore": 48,
+  "tokensAfter": 32,
+  "tokensRemaining": 168,
+  "steps": [
+    {
+      "strategyName": "sliding-window",
+      "tokensBefore": 48,
+      "tokensAfter": 32,
+      "messagesConsidered": 6,
+      "evicted": [
+        { "id": "msg_1", "reason": "outside the last 3 turns (position 1 of 6)" },
+        { "id": "msg_2", "reason": "outside the last 3 turns (position 2 of 6)" }
+      ],
+      "synthesized": []
+    }
+  ]
+}
+```
+
+Your application can tell a user (or a compliance log) *why* something
+left the context — not just that it did. This is the thing most
+truncation code, hand-rolled or built into a framework, doesn't give you.
+
+## `getContext()` vs `commit()`
+
+```
+getContext() / getContextSync()
+    │
+    ├─ derives a budgeted view from the full stored history
+    └─ does NOT modify the buffer — call it as often as you like, read-only
+
+commit(ctx.messages)
+    │
+    └─ makes that view the new buffer — required for an eviction or a
+       summary to "stick" and be seen on the next turn
+```
+
+`getContext()` is a pure read: it recomputes from the complete history
+every time, so nothing is lost by calling it repeatedly. If you want an
+eviction (or a `summarizeOldest` summary) to actually replace what's
+stored — so a later turn re-evaluates from the compacted state instead of
+the full original history — call `budget.commit(ctx.messages)` after it.
+
+## Token counting modes
+
+| Mode | Config | Trade-off |
+| --- | --- | --- |
+| **Estimate** (default) | `tokenizer: 'estimate'` (or omit it) | Zero dependencies, fast, works for any model — but approximate (`chars / charsPerToken`). |
+| **Real tokenizer** | `tokenizer: myTokenizer`, e.g. from `token-budget-tiktoken` | Exact for the model it's built for — see [`packages/token-budget-tiktoken`](./packages/token-budget-tiktoken) and [`packages/token-budget-claude`](./packages/token-budget-claude). |
+
+If you're only roughly tracking usage, the default estimator is fine. If
+you need to guarantee you never exceed a model's real context limit, use
+a tokenizer built for that model — the estimator is a heuristic, not a
+promise.
+
+**Tokenizer performance:** `token-budget-tiktoken` uses `js-tiktoken` for
+compatibility and portability, not raw speed — it is not the fastest
+standalone tokenizer available. If tokenization throughput alone is your
+bottleneck, a specialized tokenizer such as `gpt-tokenizer` may be
+faster; you can use it as `token-budget`'s `tokenizer` option directly.
+Full numbers, published without spin, in
+[`docs/benchmarks.md`](./docs/benchmarks.md#raw-tokenizer-benchmark).
+
 ## Why not just write this myself?
 
 Most teams do, and the first version is `messages.shift()` behind an
@@ -53,7 +144,11 @@ there's no answer. token-budget is that logic, written once, with atomic
 tool-call pairing, pinned-message guarantees, and a decision trace built
 in — and benchmarked at 100k messages so it doesn't become the thing that
 falls over under load six months later (see [Scale
-guidance](./packages/token-budget/README.md#scale-guidance)).
+guidance](./packages/token-budget/README.md#scale-guidance)). In our own
+[incremental-accounting benchmark](./docs/benchmarks.md#incremental-accounting-benchmark),
+recomputing the running token total from scratch on every add — the
+obvious way to write this — was ~100× slower than incremental accounting
+at 100,000 messages.
 
 ## Why not LangChain's `trim_messages` / `SummarizationMiddleware`?
 
@@ -65,6 +160,13 @@ strategies with a hard token-budget guarantee (sliding window, then
 summarize, with drop-oldest as a backstop); or an explainable trail of
 what was evicted and why, for debugging or an audit log — see
 [`explain()`](./packages/token-budget/README.md#explain--debugging-strategy-decisions).
+In our [context-management benchmark's realistic bounded-window
+scenario](./docs/benchmarks.md#realistic-benchmark--bounded-window-on-a-large-history)
+— a 50,000-message history queried at everyday window sizes, not a worst
+case — `trimMessages` consistently took 20+ seconds where token-budget
+took well under a second; full methodology and every number, including
+where this reflects `trimMessages` not being built for repeated,
+large-scale eviction, in [`docs/comparisons.md`](./docs/comparisons.md).
 
 ## Why not the provider's own truncation (e.g. OpenAI's `truncation_strategy`)?
 
@@ -94,9 +196,16 @@ Each package is independently versioned and independently installable —
 `token-budget` is a peer dependency of the adapters, not a hard pin. See
 each package's own README for its API, usage, and known limitations.
 
+## Examples
+
+- [`examples/openai-long-conversation`](./examples/openai-long-conversation) — a 300-turn conversation kept under budget, converted to OpenAI's wire format.
+- [`examples/coding-agent`](./examples/coding-agent) — tool-call/tool-result atomicity, made concrete.
+- [`packages/token-budget/COOKBOOK.md`](./packages/token-budget/COOKBOOK.md) — four smaller, tested recipes (customer-support bot, coding agent, RAG chat, long-form writing assistant).
+
 ## Docs
 
-- [`packages/token-budget/COOKBOOK.md`](./packages/token-budget/COOKBOOK.md) — four tested configuration recipes (customer-support bot, coding agent, RAG chat, long-form writing assistant).
+- [`docs/benchmarks.md`](./docs/benchmarks.md) — reproducible performance numbers (`npm run bench`), including where token-budget loses.
+- [`docs/comparisons.md`](./docs/comparisons.md) — token-budget vs. DIY, `gpt-tokenizer`, LangChain, and provider-native truncation.
 - [`CONTRIBUTING.md`](./CONTRIBUTING.md) — how to add a community tokenizer, strategy, or framework adapter; the `token-budget-{tokenizer,strategy,adapter}-*` naming convention; and the review bar.
 - [`COMPATIBILITY.md`](./COMPATIBILITY.md) — what each adapter/tokenizer package is tested against, and why they use structural typing instead of a real SDK dependency.
 - [`CHANGELOG.md`](./CHANGELOG.md) — engineering history, phase by phase.
@@ -113,6 +222,7 @@ npm run build       # builds every package (core first, so adapters can resolve 
 npm run typecheck   # tsc --noEmit in every package
 npm run test         # vitest run in every package
 npm run test:coverage
+npm run bench          # reproducible performance benchmarks — see docs/benchmarks.md
 ```
 
 Each package also has its own scripts (`npm run test --workspace=token-budget-anthropic`).

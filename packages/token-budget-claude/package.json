@@ -2,6 +2,15 @@
   "name": "token-budget-claude",
   "version": "0.1.0",
   "description": "Best-effort Claude tokenizer approximation for token-budget, with a calibrate() utility to tune it against your own real usage data.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shivam039/token-budget.git",
+    "directory": "packages/token-budget-claude"
+  },
+  "homepage": "https://github.com/shivam039/token-budget/tree/main/packages/token-budget-claude#readme",
+  "bugs": {
+    "url": "https://github.com/shivam039/token-budget/issues"
+  },
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",

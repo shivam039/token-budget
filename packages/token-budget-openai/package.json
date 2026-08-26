@@ -2,6 +2,15 @@
   "name": "token-budget-openai",
   "version": "0.1.0",
   "description": "OpenAI Chat Completions API adapter for token-budget.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shivam039/token-budget.git",
+    "directory": "packages/token-budget-openai"
+  },
+  "homepage": "https://github.com/shivam039/token-budget/tree/main/packages/token-budget-openai#readme",
+  "bugs": {
+    "url": "https://github.com/shivam039/token-budget/issues"
+  },
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
