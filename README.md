@@ -1,8 +1,77 @@
-# token-budget monorepo
+# token-budget
 
-Model-agnostic token accounting and eviction strategies for multi-turn LLM
-conversations, plus thin framework adapters that connect it to real
-provider SDKs.
+[![CI](https://github.com/shivam039/token-budget/actions/workflows/ci.yml/badge.svg)](https://github.com/shivam039/token-budget/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/github/license/shivam039/token-budget)](./LICENSE)
+[![Node >= 18](https://img.shields.io/badge/node-%3E%3D18-339933)](./packages/token-budget/package.json)
+
+Multi-turn LLM conversations grow until they blow the context window —
+then you get a hard 400 from the provider, or a summarization job bolted
+on after the fact that quietly drops your system prompt or splits a
+tool-call from its result. **token-budget keeps the conversation inside
+its token budget automatically**, with a strategy you choose (drop
+oldest, sliding window, priority, summarize, or your own), and tells you
+exactly what it did and why.
+
+It's not a framework. It doesn't call a model API itself (except through
+a `summarize` callback you supply). It's the buffer-management layer
+underneath whatever you're already using — raw provider SDKs, Vercel AI
+SDK, or LangChain.js.
+
+```sh
+npm install token-budget
+```
+
+```ts
+import { TokenBudget, strategies } from 'token-budget';
+
+const budget = new TokenBudget({
+  maxTokens: 8000,
+  reserve: 1000, // tokens reserved for the model's output
+  strategy: strategies.dropOldest(),
+});
+
+budget.addMessage({ role: 'system', content: 'You are a helpful assistant.', pinned: true });
+budget.addMessage({ role: 'user', content: 'Hello!' });
+
+// ... 500 turns later, still under 8,000 tokens ...
+const { messages, tokensUsed, tokensRemaining, evicted } = await budget.getContext();
+```
+
+`messages` is ready to send to your model's chat-completion API as-is —
+`evicted` tells you exactly what got dropped, and `budget.explain()`
+gives you the full reasoning trail. `pinned: true` means the system
+prompt survives every eviction strategy, and tool-call/tool-result pairs
+are always kept or dropped together — no dangling tool results.
+
+## Why not just write this myself?
+
+Most teams do, and the first version is `messages.shift()` behind an
+`if`. It works until: the shift deletes the system prompt, or splits a
+tool-call from the result it's paired with (which most provider APIs
+reject outright), or someone asks "why did it drop *that* message" and
+there's no answer. token-budget is that logic, written once, with atomic
+tool-call pairing, pinned-message guarantees, and a decision trace built
+in — and benchmarked at 100k messages so it doesn't become the thing that
+falls over under load six months later (see [Scale
+guidance](./packages/token-budget/README.md#scale-guidance)).
+
+## Why not LangChain's `trim_messages` / `SummarizationMiddleware`?
+
+If you're already all-in on LangChain, those cover the basics. Reach for
+token-budget instead when you need: the same eviction/summarization logic
+to work identically whether you're calling LangChain, the Vercel AI SDK,
+or a raw OpenAI/Anthropic client (no framework lock-in); a *chain* of
+strategies with a hard token-budget guarantee (sliding window, then
+summarize, with drop-oldest as a backstop); or an explainable trail of
+what was evicted and why, for debugging or an audit log — see
+[`explain()`](./packages/token-budget/README.md#explain--debugging-strategy-decisions).
+
+## Why not the provider's own truncation (e.g. OpenAI's `truncation_strategy`)?
+
+Provider-native truncation is opaque (it decides what to drop, not you),
+locks you to that one provider, and doesn't tell you which messages
+survived or why. token-budget runs client-side, works the same way
+against every provider, and never evicts anything you've marked `pinned`.
 
 ## Packages
 
@@ -30,6 +99,7 @@ each package's own README for its API, usage, and known limitations.
 - [`packages/token-budget/COOKBOOK.md`](./packages/token-budget/COOKBOOK.md) — four tested configuration recipes (customer-support bot, coding agent, RAG chat, long-form writing assistant).
 - [`CONTRIBUTING.md`](./CONTRIBUTING.md) — how to add a community tokenizer, strategy, or framework adapter; the `token-budget-{tokenizer,strategy,adapter}-*` naming convention; and the review bar.
 - [`COMPATIBILITY.md`](./COMPATIBILITY.md) — what each adapter/tokenizer package is tested against, and why they use structural typing instead of a real SDK dependency.
+- [`CHANGELOG.md`](./CHANGELOG.md) — engineering history, phase by phase.
 
 ## Development
 
@@ -46,46 +116,16 @@ npm run test:coverage
 ```
 
 Each package also has its own scripts (`npm run test --workspace=token-budget-anthropic`).
+CI runs this same build/typecheck/test:coverage pipeline on Node 18, 20,
+and 22 for every push and PR — see [`.github/workflows/ci.yml`](./.github/workflows/ci.yml).
 
-## Roadmap
+## Status
 
-Done so far, in the project's own suggested sprint order: the Anthropic
-and OpenAI framework adapters plus the shared adapter conformance suite
-(`token-budget/test-utils`); `explain()`/the `decision` event; streaming
-support (`beginStream`/`appendStreamChunk`/`endStream`/`abortStream`) plus
-`token-budget-vercel-ai`; `token-budget-tiktoken`; recursive summarization
-(`maxSummaryDepth`, `onMaxDepthReached`, accumulating provenance, plus
-`budget.commit()` to make a strategized result stick across turns) with a
-10,500-message soak test; persistence (`serialize()`/`deserialize()`,
-`onPersist` with debouncing, `schemaVersion`); `token-budget-langchain`
-(`BaseMessage[]` conversion + a `TokenBudgetMemory` class); and
-`token-budget-claude` (with a `calibrate()` utility) + locale-aware
-estimation (`estimatorProfile`, real cl100k_base-measured ratios for
-`cjk`/`cyrillic`); and performance/scale hardening — a published
-benchmark suite at 1k/10k/50k/100k messages
-(`test/soak/scale.soak.ts`), a multi-day-session memory/leak soak test
-(`test/soak/memory.soak.ts`), a scheduled (not per-commit) soak CI
-workflow, and a fix for an O(n²) `removeMessage` regression found while
-benchmarking (Map-backed message storage instead of an array — internal
-only, no public API change); and ecosystem/community docs — a tokenizer
-conformance suite (`runTokenizerConformanceSuite`, alongside the existing
-adapter suite, both now dogfooded by every first-party tokenizer/adapter
-package's own tests), a four-recipe strategy cookbook with a real test per
-recipe, `CONTRIBUTING.md` (community package naming convention and review
-bar), and a compatibility matrix. All eleven sprints from the Phase 2 spec
-are complete.
-
-Phase 3 (in progress): cost/usage accounting (`costModel`, `maxCost`,
-`getUsageReport()`/`exportUsageJSON()`/`exportUsageCSV()`) plus
-`token-budget-pricing`; `token-budget-otel` instrumentation;
-`semanticRelevance` (hybrid semantic/recency/priority scoring, a scoring
-timeout with fallback, per-instance score caching) plus
-`token-budget-embeddings`; governance hooks (`redactor`, `auditLog`/
-`onAuditEvent`, `tags`); and `token-budget-devtools`, a local Vite app for
-inspecting a `serialize()` dump. `token-budget-py` (a Python port) is
-started but explicitly partial — see its own README for exact scope.
-Still to come: ecosystem registry/scorer conformance suite, a VS Code
-extension, a docs playground, and 1.0 release readiness.
+Phase 1 (MVP) and Phase 2 (ecosystem: framework adapters, streaming,
+persistence, recursive summarization, performance hardening, community
+docs) are complete. Phase 3 (cost accounting, OpenTelemetry, semantic
+retrieval, governance hooks, devtools, an early Python port) is in
+progress. Full history in [`CHANGELOG.md`](./CHANGELOG.md).
 
 ## License
 
