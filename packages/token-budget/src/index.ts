@@ -35,4 +35,13 @@ export type {
   Tokenizer,
   TraceDecision,
   WarningInfo,
+  Scorer,
+  ScoringContext,
+  CostModel,
+  CostBreakdown,
+  UsageReport,
+  CostCeilingPolicy,
+  CostCeilingPolicyCallback,
+  CostWarningInfo,
+  AuditEvent,
 } from './types.js';

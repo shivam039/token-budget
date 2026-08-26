@@ -123,6 +123,8 @@ export interface Stats {
   pinnedCount: number;
   /** Open streams' running token estimates, included in `tokensUsed` (FR2-3.5). */
   streaming: StreamingEstimate[];
+  /** Cumulative cost so far, only present when `costModel` is configured (Phase 3). */
+  cost?: CostBreakdown;
 }
 
 export interface ContextResult {
@@ -174,6 +176,17 @@ export interface TokenBudgetEvents {
   'strategy-error': (info: StrategyErrorInfo) => void;
   /** Fired every time a strategy runs, mirroring `explain()`'s output (FR2-4.4). */
   decision: (report: ExplainReport) => void;
+  /** Fired once when cumulative cost first crosses `costWarningThreshold` (Phase 3). */
+  costWarning: (info: CostWarningInfo) => void;
+  /**
+   * Fired with the current lifetime usage report after every
+   * `getContext()`/`getContextSync()` call, throttled by
+   * `usageSnapshotIntervalMs` (Phase 3). `onUsageSnapshot` in the config is
+   * sugar for subscribing to this event at construction time — subscribe
+   * with `on('usageSnapshot', ...)` directly to attach/detach a listener
+   * after construction (e.g. from an instrumentation package).
+   */
+  usageSnapshot: (report: UsageReport, timestamp: number) => void;
 }
 
 export type TokenBudgetEventName = keyof TokenBudgetEvents;
@@ -264,4 +277,126 @@ export interface TokenBudgetConfig {
    * `onPersist` synchronously after every mutation.
    */
   persistDebounceMs?: number;
+  /** Pluggable cost model for cost accounting (Phase 3). Ignored unless `model` is also set. */
+  costModel?: CostModel;
+  /** The model name passed to `costModel.costPerToken()` for cost accounting. */
+  model?: string;
+  /** Cumulative cost threshold that fires the `costWarning` event once. */
+  costWarningThreshold?: number;
+  /**
+   * Cumulative cost ceiling. Once reached, `maxCostPolicy` decides what
+   * happens to the *next* `addMessage()` call — the message that pushed
+   * cost to the ceiling is always recorded, only later ones are affected.
+   */
+  maxCost?: number;
+  /**
+   * Policy applied once `maxCost` is reached. `'block-new-messages'`
+   * throws from `addMessage()` *before* any state changes, so a rejected
+   * message leaves usage/cost accounting untouched. A callback instead
+   * receives `{ cumulativeCost, threshold, currency }` on every
+   * over-ceiling `addMessage()` call and does not block it. No default —
+   * omitting this makes `maxCost` a no-op.
+   */
+  maxCostPolicy?: CostCeilingPolicy;
+  /**
+   * Sugar for `budget.on('usageSnapshot', fn)` at construction time — see
+   * that event for details. Attach/detach after construction with
+   * `on()`/`off()` directly instead (e.g. from an instrumentation package
+   * wrapping an already-constructed budget).
+   */
+  onUsageSnapshot?: (report: UsageReport, timestamp: number) => void;
+  /**
+   * Minimum interval (ms) between `usageSnapshot` emissions. Default
+   * 0/undefined: emit on every `getContext()`/`getContextSync()` call.
+   */
+  usageSnapshotIntervalMs?: number;
+  /** Arbitrary tags carried on `UsageReport`/`AuditEvent` (e.g. `{ tenantId, userId }`). */
+  tags?: Record<string, string>;
+  /**
+   * Pre-processor hook applied to every message before it's counted or
+   * buffered (Phase 3) — e.g. to strip PII prior to token accounting and
+   * storage. Runs once per `addMessage()` call, not on `editMessage()`.
+   */
+  redactor?: (message: BudgetMessage) => BudgetMessage;
+  /** When true, calls `onAuditEvent` after every `getContext()`/`getContextSync()` call. Default false. */
+  auditLog?: boolean;
+  /**
+   * Receives one `AuditEvent` per strategy decision when `auditLog` is
+   * true — a structured, reproducible record of what ran and what it
+   * evicted, for compliance logging. These events are plain, unsigned
+   * data (no built-in tamper-evidence/hashing) — hash or sign them
+   * yourself in the hook if your compliance requirements need that.
+   */
+  onAuditEvent?: (event: AuditEvent) => void | Promise<void>;
 }
+
+/** One strategy decision's audit record, emitted via `onAuditEvent` when `auditLog` is true (Phase 3). */
+export interface AuditEvent {
+  timestamp: number;
+  strategyApplied: string;
+  tokensBefore: number;
+  tokensAfter: number;
+  effectiveBudget: number;
+  messagesConsidered: number;
+  evictedIds: string[];
+  synthesizedIds: string[];
+  tags?: Record<string, string>;
+}
+
+/** Context passed to a `Scorer` for the `semanticRelevance` strategy (Phase 3). */
+export interface ScoringContext {
+  /** The full message buffer being scored. */
+  buffer: BudgetMessage[];
+  /** The message treated as the current query — the most recent `user` message, or the last message if none. */
+  query: BudgetMessage;
+  auxiliaryContext?: unknown;
+}
+
+/**
+ * Pluggable relevance scorer for the `semanticRelevance` strategy. Higher
+ * scores are more relevant and more likely to be retained. Bring your own
+ * embedding/similarity implementation — see `token-budget-embeddings` for
+ * a reference cosine-similarity implementation.
+ */
+export interface Scorer {
+  score(message: BudgetMessage, context: ScoringContext): Promise<number> | number;
+}
+
+export interface CostBreakdown {
+  inputCost: number;
+  outputCost: number;
+  totalCost: number;
+  currency: string;
+}
+
+/** Pluggable per-token pricing for cost accounting (Phase 3). See `token-budget-pricing` for a static lookup table. */
+export interface CostModel {
+  costPerToken(role: Role, model: string, direction: 'input' | 'output'): number;
+}
+
+/**
+ * Cumulative, lifetime usage/cost ledger (Phase 3) — unlike `stats()`,
+ * which reflects the *current* buffer, every field here only ever grows:
+ * `removeMessage`/`editMessage`/eviction don't retroactively adjust it,
+ * the same way `totalMessagesProcessed` counts every message ever added,
+ * including ones later evicted.
+ */
+export interface UsageReport {
+  totalMessagesProcessed: number;
+  totalTokensConsumed: Record<Role, number>;
+  /** Messages evicted or folded into a summary, keyed by strategy name. */
+  totalEvictions: Record<string, number>;
+  /** Only present when `costModel` is configured. */
+  totalCost?: CostBreakdown;
+  tags?: Record<string, string>;
+}
+
+export interface CostWarningInfo {
+  cumulativeCost: number;
+  threshold: number;
+  currency: string;
+}
+
+export type CostCeilingPolicyCallback = (info: CostWarningInfo) => void;
+
+export type CostCeilingPolicy = 'block-new-messages' | CostCeilingPolicyCallback;

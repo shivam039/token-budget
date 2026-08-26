@@ -17,6 +17,9 @@ change upstream has a documented baseline to diff against.
 | [`token-budget-langchain`](./packages/token-budget-langchain) | LangChain.js `BaseMessage[]` + `BaseMemory` | `@langchain/core@^0.3.0` message/memory shape (structural — no SDK dep) | None |
 | [`token-budget-tiktoken`](./packages/token-budget-tiktoken) | OpenAI-family exact tokenization | `js-tiktoken@^1.0.20` (pure JS, always available); optional native path against `tiktoken@^1.0.20` (Node-only, opt-in) | `js-tiktoken`; optional peer `tiktoken` |
 | [`token-budget-claude`](./packages/token-budget-claude) | Claude token-count approximation | Built on `token-budget-tiktoken`'s `cl100k_base`; no empirical Claude-count validation baked in — see the package's own README and `calibrate()` | `token-budget-tiktoken` |
+| [`token-budget-pricing`](./packages/token-budget-pricing) | `CostModel` pricing table | A point-in-time OpenAI/Anthropic/Google pricing snapshot — see the package's own README; use `overrides` for current rates | None |
+| [`token-budget-otel`](./packages/token-budget-otel) | OpenTelemetry instrumentation | `@opentelemetry/api@^1.9.0` (structural — no SDK/exporter dependency) | None (peer: `@opentelemetry/api >=1.0.0`) |
+| [`token-budget-embeddings`](./packages/token-budget-embeddings) | `Scorer` for `semanticRelevance` | Bring-your-own embedding function (structural — no embeddings SDK dependency) | None |
 
 Every adapter also depends on `token-budget` itself as a **peer**
 dependency (`^0.1.0`, a semver range — not a pinned exact version), so the
@@ -48,3 +51,11 @@ doesn't require a declared relationship — so:
 All packages target Node.js `>=18` and are published as dual ESM/CJS
 builds with TypeScript type declarations. `packages/token-budget` itself
 has **zero required runtime dependencies**.
+
+## Python
+
+[`packages/token-budget-py`](./packages/token-budget-py) is a separate,
+explicitly work-in-progress Python port — not npm-published, not part of
+this matrix or the workspaces build, and not at feature parity with the
+JS package. Targets Python `>=3.8`; see its own README for exactly what's
+implemented today.

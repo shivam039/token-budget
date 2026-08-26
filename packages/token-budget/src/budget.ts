@@ -9,9 +9,12 @@ import {
 } from './tokenizer.js';
 import type {
   AddMessageInput,
+  AuditEvent,
   BudgetMessage,
   ContentBlock,
   ContextResult,
+  CostCeilingPolicy,
+  CostModel,
   ExplainReport,
   Role,
   SerializedState,
@@ -23,6 +26,7 @@ import type {
   TokenBudgetConfig,
   TokenBudgetEvents,
   TokenBudgetEventName,
+  UsageReport,
 } from './types.js';
 
 const SCHEMA_VERSION = 1;
@@ -112,6 +116,22 @@ export class TokenBudget {
   private persistDebounceMs: number;
   private persistTimer: unknown;
 
+  // ---- cost & governance (Phase 3) ----------------------------------------
+  private cumulativeCost = 0;
+  private costWarned = false;
+  private costModel?: CostModel;
+  private modelName?: string;
+  private costWarningThreshold?: number;
+  private maxCost?: number;
+  private maxCostPolicy?: CostCeilingPolicy;
+  private usageReport: UsageReport;
+  private usageSnapshotIntervalMs?: number;
+  private lastUsageSnapshotAt = 0;
+  private tags?: Record<string, string>;
+  private redactor?: (message: BudgetMessage) => BudgetMessage;
+  private auditLog: boolean;
+  private onAuditEventHook?: (event: AuditEvent) => void | Promise<void>;
+
   constructor(config: TokenBudgetConfig) {
     if (typeof config.maxTokens !== 'number' || !Number.isFinite(config.maxTokens) || config.maxTokens <= 0) {
       throw new Error('TokenBudget: config.maxTokens must be a positive finite number.');
@@ -139,6 +159,26 @@ export class TokenBudget {
     this.charsPerTokenValue = config.charsPerToken ?? 4;
     this.onPersistHook = config.onPersist;
     this.persistDebounceMs = config.persistDebounceMs ?? 0;
+
+    this.costModel = config.costModel;
+    this.modelName = config.model;
+    this.costWarningThreshold = config.costWarningThreshold;
+    this.maxCost = config.maxCost;
+    this.maxCostPolicy = config.maxCostPolicy;
+    this.usageSnapshotIntervalMs = config.usageSnapshotIntervalMs;
+    this.tags = config.tags;
+    this.redactor = config.redactor;
+    this.auditLog = config.auditLog ?? false;
+    this.onAuditEventHook = config.onAuditEvent;
+    if (config.onUsageSnapshot) this.on('usageSnapshot', config.onUsageSnapshot);
+
+    this.usageReport = {
+      totalMessagesProcessed: 0,
+      totalTokensConsumed: { user: 0, assistant: 0, system: 0, tool: 0 },
+      totalEvictions: {},
+      tags: this.tags,
+      ...(this.costModel ? { totalCost: { inputCost: 0, outputCost: 0, totalCost: 0, currency: 'USD' } } : {}),
+    };
 
     const tokenizer =
       config.tokenizer && config.tokenizer !== 'estimate'
@@ -206,13 +246,20 @@ export class TokenBudget {
 
   // ---- buffer management --------------------------------------------------
 
-  /** Appends a message and incrementally recomputes running totals (FR-3.1). Throws if `input.id` collides with an existing message. */
+  /**
+   * Appends a message and incrementally recomputes running totals (FR-3.1).
+   * Throws if `input.id` collides with an existing message, or if
+   * `maxCostPolicy: 'block-new-messages'` and this message would push
+   * cumulative cost to `maxCost` — that check runs *before* any state is
+   * touched, so a rejected message leaves the buffer and usage/cost
+   * accounting exactly as they were (Phase 3).
+   */
   addMessage(input: AddMessageInput): BudgetMessage {
     const id = input.id ?? this.generateId();
     if (input.id !== undefined && this.messages.has(id)) {
       throw new Error(`TokenBudget: a message with id "${id}" already exists. Use editMessage() to update it, or removeMessage() first.`);
     }
-    const message: BudgetMessage = {
+    let message: BudgetMessage = {
       id,
       role: input.role,
       content: input.content,
@@ -223,10 +270,35 @@ export class TokenBudget {
       metadata: input.metadata,
       timestamp: input.timestamp ?? Date.now(),
     };
+    if (this.redactor) message = this.redactor(message);
     message.tokens = this.computeTokens(message);
+
+    let cost = 0;
+    let costDirection: 'input' | 'output' | undefined;
+    if (this.costModel && this.modelName) {
+      costDirection = message.role === 'assistant' ? 'output' : 'input';
+      cost = this.costModel.costPerToken(message.role, this.modelName, costDirection) * message.tokens;
+    }
+
+    // Blocking check happens before any mutation below — a throw here must
+    // leave usage/cost accounting untouched, since the message was never
+    // actually added.
+    if (this.maxCost !== undefined && this.maxCostPolicy === 'block-new-messages' && this.cumulativeCost + cost >= this.maxCost) {
+      throw new Error(`TokenBudget: maxCost ceiling (${this.maxCost}) reached.`);
+    }
 
     this.messages.set(id, message);
     this.totalTokens += message.tokens;
+
+    this.usageReport.totalMessagesProcessed++;
+    this.usageReport.totalTokensConsumed[message.role] = (this.usageReport.totalTokensConsumed[message.role] ?? 0) + message.tokens;
+    if (costDirection && this.usageReport.totalCost) {
+      this.cumulativeCost += cost;
+      if (costDirection === 'input') this.usageReport.totalCost.inputCost += cost;
+      else this.usageReport.totalCost.outputCost += cost;
+      this.usageReport.totalCost.totalCost += cost;
+    }
+    this.checkCostCeiling();
 
     if (message.tokens > this.effectiveBudget) {
       this.emitter.emit('overflow', {
@@ -396,7 +468,41 @@ export class TokenBudget {
       messageCount: this.messages.size,
       pinnedCount: [...this.messages.values()].reduce((n, m) => n + (m.pinned ? 1 : 0), 0),
       streaming,
+      cost: this.usageReport.totalCost ? { ...this.usageReport.totalCost } : undefined,
     };
+  }
+
+  // ---- cost & usage analytics (Phase 3) -----------------------------------
+
+  /**
+   * Cumulative, lifetime usage/cost ledger — see `UsageReport`'s doc for
+   * how it differs from `stats()`. Returns a deep copy; mutating the
+   * result has no effect on the budget.
+   */
+  getUsageReport(): UsageReport {
+    return JSON.parse(JSON.stringify(this.usageReport)) as UsageReport;
+  }
+
+  /** JSON-serialized `getUsageReport()`, indented for readability. */
+  exportUsageJSON(): string {
+    return JSON.stringify(this.usageReport, null, 2);
+  }
+
+  /** Flat `Metric,Value` CSV of `getUsageReport()`'s scalar fields. */
+  exportUsageCSV(): string {
+    const rows: Array<[string, string | number]> = [
+      ['totalMessagesProcessed', this.usageReport.totalMessagesProcessed],
+      ['userTokens', this.usageReport.totalTokensConsumed.user ?? 0],
+      ['assistantTokens', this.usageReport.totalTokensConsumed.assistant ?? 0],
+      ['systemTokens', this.usageReport.totalTokensConsumed.system ?? 0],
+      ['toolTokens', this.usageReport.totalTokensConsumed.tool ?? 0],
+    ];
+    if (this.usageReport.totalCost) {
+      rows.push(['inputCost', this.usageReport.totalCost.inputCost]);
+      rows.push(['outputCost', this.usageReport.totalCost.outputCost]);
+      rows.push(['totalCost', this.usageReport.totalCost.totalCost]);
+    }
+    return ['Metric,Value', ...rows.map(([metric, value]) => `${metric},${value}`)].join('\n');
   }
 
   // ---- streaming (Phase 2 §3.3) -------------------------------------------
@@ -563,6 +669,47 @@ export class TokenBudget {
     }
   }
 
+  /**
+   * Post-commit cost bookkeeping, called after `addMessage` has already
+   * updated `cumulativeCost` — the blocking ceiling check runs earlier,
+   * *before* that commit (see `addMessage`). This only handles the
+   * non-blocking paths: the one-time `costWarning` event, and invoking a
+   * callback `maxCostPolicy`.
+   */
+  private checkCostCeiling(): void {
+    if (this.costWarningThreshold !== undefined) {
+      if (this.cumulativeCost >= this.costWarningThreshold) {
+        if (!this.costWarned) {
+          this.costWarned = true;
+          this.emitter.emit('costWarning', {
+            cumulativeCost: this.cumulativeCost,
+            threshold: this.costWarningThreshold,
+            currency: 'USD',
+          });
+        }
+      } else {
+        this.costWarned = false;
+      }
+    }
+
+    if (this.maxCost !== undefined && this.cumulativeCost >= this.maxCost && typeof this.maxCostPolicy === 'function') {
+      this.maxCostPolicy({ cumulativeCost: this.cumulativeCost, threshold: this.maxCost, currency: 'USD' });
+    }
+  }
+
+  /**
+   * Emits a `usageSnapshot` event with the current lifetime usage report,
+   * throttled by `usageSnapshotIntervalMs` (Phase 3). Called at the end of
+   * every `getContext()`/`getContextSync()` call, after this call's
+   * evictions have been tallied into the report.
+   */
+  private snapshotUsageIfNeeded(): void {
+    const now = Date.now();
+    if (this.usageSnapshotIntervalMs && now - this.lastUsageSnapshotAt < this.usageSnapshotIntervalMs) return;
+    this.lastUsageSnapshotAt = now;
+    this.emitter.emit('usageSnapshot', { ...this.usageReport }, now);
+  }
+
   /** FR2-6.3: debounced (or immediate, if persistDebounceMs is 0) auto-persist after a mutation. */
   private schedulePersist(): void {
     if (!this.onPersistHook) return;
@@ -638,6 +785,27 @@ export class TokenBudget {
     this.lastExplainReport = report;
     if (this.devMode) getConsole()?.debug?.('[token-budget] decision', report);
     this.emitter.emit('decision', report);
+
+    for (const step of steps) {
+      if (step.evicted.length > 0) {
+        this.usageReport.totalEvictions[step.strategyName] = (this.usageReport.totalEvictions[step.strategyName] ?? 0) + step.evicted.length;
+      }
+    }
+    this.snapshotUsageIfNeeded();
+
+    if (this.auditLog && this.onAuditEventHook) {
+      void this.onAuditEventHook({
+        timestamp: Date.now(),
+        strategyApplied: this.strategy.name,
+        tokensBefore,
+        tokensAfter: tokensUsed,
+        effectiveBudget: this.effectiveBudget,
+        messagesConsidered: original.length,
+        evictedIds: steps.flatMap((step) => step.evicted.map((e) => e.id)),
+        synthesizedIds: steps.flatMap((step) => step.synthesized.map((s) => s.id)),
+        tags: this.tags,
+      });
+    }
 
     return {
       messages: strategized,

@@ -1,0 +1,17 @@
+{
+  "name": "token-budget-devtools",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Local Vite app for visually inspecting a token-budget serialize() dump: buffer contents, pinned/eviction state.",
+  "type": "module",
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite",
+    "test": "vitest run",
+    "typecheck": "echo \"token-budget-devtools is plain JS, nothing to typecheck\""
+  },
+  "devDependencies": {
+    "vite": "^5.4.19",
+    "vitest": "^2.1.0"
+  }
+}

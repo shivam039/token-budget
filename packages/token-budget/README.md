@@ -285,6 +285,73 @@ package family may follow if community demand justifies it (see
 [`CONTRIBUTING.md`](../../CONTRIBUTING.md) for the community package
 naming convention).
 
+## Cost & usage accounting (Phase 3)
+
+Pass a `costModel` and `model` to track cost alongside tokens:
+
+```ts
+import { createCostModel } from 'token-budget-pricing'; // or bring your own CostModel
+
+const budget = new TokenBudget({
+  maxTokens: 128000,
+  model: 'gpt-4o',
+  costModel: createCostModel(), // { costPerToken(role, model, direction) => number }
+  costWarningThreshold: 5.0, // fires 'costWarning' once cumulative cost crosses $5
+  maxCost: 10.0,
+  maxCostPolicy: 'block-new-messages', // or a callback: (info) => void
+});
+
+budget.addMessage({ role: 'user', content: 'Hello!' });
+budget.stats().cost; // { inputCost, outputCost, totalCost, currency: 'USD' } — current buffer
+budget.getUsageReport(); // cumulative, lifetime — see below
+```
+
+`stats().cost` and `getUsageReport()` answer different questions:
+`stats()` reflects the *current* buffer (so cost drops if you
+`removeMessage()` something), while `getUsageReport()` is a **lifetime
+ledger** — `totalMessagesProcessed`/`totalTokensConsumed`/cost only ever
+grow, the same way `totalMessagesProcessed` counts every message ever
+added, including ones later evicted. Export it with
+`exportUsageJSON()`/`exportUsageCSV()`.
+
+`maxCostPolicy: 'block-new-messages'` throws from `addMessage()` **before**
+any state changes — a rejected message leaves the buffer and usage/cost
+accounting exactly as they were; it was never actually added. The message
+that pushes cost *to* the ceiling is always recorded; only later ones are
+blocked.
+
+`onUsageSnapshot`/`usageSnapshotIntervalMs` fire a `usageSnapshot` event
+(throttled by the interval; default: every `getContext()`/
+`getContextSync()` call) — `onUsageSnapshot` in the config is just sugar
+for subscribing at construction time; instrumentation wrapping an
+already-constructed budget should use `budget.on('usageSnapshot', ...)`
+directly (see `token-budget-otel`).
+
+## Governance & multi-tenancy (Phase 3)
+
+```ts
+const budget = new TokenBudget({
+  maxTokens: 8000,
+  redactor: (message) => ({ ...message, content: stripPII(message.content) }), // runs before tokens are counted
+  auditLog: true,
+  onAuditEvent: (event) => auditSink.write(event), // { timestamp, strategyApplied, evictedIds, synthesizedIds, tags, ... }
+  tags: { tenantId: 'acme-corp' }, // carried on UsageReport and every AuditEvent
+});
+```
+
+`redactor` runs once per `addMessage()` call, before token counting and
+storage — so redacted content is what gets buffered, counted, and
+persisted, not the original. `onAuditEvent` fires after every
+`getContext()`/`getContextSync()` call when `auditLog` is true; events are
+plain, unsigned data — no built-in tamper-evidence/hashing — hash or sign
+them yourself in the hook if your compliance requirements need that.
+
+**Isolation**: separate `TokenBudget` instances never share buffer or
+usage state (there's no module-level/static mutable state in this
+package). The one thing to watch is a *shared strategy instance* with its
+own internal cache — see `semanticRelevance()`'s note above — construct
+one per budget rather than reusing a single instance across tenants.
+
 ## Strategies
 
 All strategies implement:
@@ -410,6 +477,36 @@ strategies.chain([
 
 A chain is `sync: true` only if every member strategy is; `getContextSync`
 throws otherwise.
+
+### `strategies.semanticRelevance({ scorer, weights?, mustRetain?, scoringTimeoutMs?, fallback?, auxiliaryContext? })` (Phase 3)
+
+Scores every non-pinned message with your `scorer` — the most recent
+`user` message is treated as the query — and retains the highest-scoring
+atomic units until the budget is full, instead of purely age-based
+eviction:
+
+```ts
+import { createEmbeddingsScorer } from 'token-budget-embeddings'; // or bring your own Scorer
+
+strategies.semanticRelevance({
+  scorer: createEmbeddingsScorer({ embed: myEmbeddingFn }),
+  weights: { semantic: 0.8, recency: 0.2 }, // blend in recency; default is pure semantic
+  mustRetain: (msg) => msg.metadata?.pinned_by_user === true,
+  scoringTimeoutMs: 2000, // default
+  fallback: strategies.dropOldest(), // used if scorer throws or times out
+});
+```
+
+A `Scorer` is just `{ score(message, context): Promise<number> | number }`
+— see `token-budget-embeddings` for a reference cosine-similarity
+implementation, or write your own against any relevance signal.
+
+**Construct one `semanticRelevance()` instance per `TokenBudget`.** Its
+score cache is per-strategy-instance state, keyed by message id and
+cleared when the query changes — sharing one instance across multiple
+budgets can cross-contaminate cached scores if their messages happen to
+share an id. The `scorer` itself is fine to share/reuse; only the
+strategy object's own cache is instance-scoped.
 
 ## Tokenizers
 
@@ -568,6 +665,20 @@ at the repo root for the full checklist and the community package naming
 convention, and [`COMPATIBILITY.md`](../../COMPATIBILITY.md) for how
 adapters document what they're tested against without pinning the real
 SDK as a dependency.
+
+## Cost, observability & tooling (Phase 3)
+
+- [`token-budget-pricing`](../token-budget-pricing) — static per-model
+  pricing table / `CostModel` for the `costModel` config option.
+- [`token-budget-otel`](../token-budget-otel) — OpenTelemetry
+  instrumentation: spans per strategy decision, counters for tokens/cost/
+  evictions.
+- [`token-budget-embeddings`](../token-budget-embeddings) — reference
+  cosine-similarity `Scorer` for `semanticRelevance`.
+- [`token-budget-devtools`](../token-budget-devtools) — local Vite app for
+  visually inspecting a `serialize()` dump. Not published to npm.
+- [`token-budget-py`](../token-budget-py) — a Python port. **Work in
+  progress**, not at feature parity — see its own README for exact scope.
 
 ## Cookbook
 
