@@ -1,0 +1,62 @@
+{
+  "name": "token-budget-vercel-ai",
+  "version": "0.1.0",
+  "description": "Vercel AI SDK adapter for token-budget: CoreMessage[] conversion, streaming integration, and an optional React hook.",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./react": {
+      "types": "./dist/react.d.ts",
+      "import": "./dist/react.js",
+      "require": "./dist/react.cjs"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "sideEffects": false,
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run build && npm run test"
+  },
+  "keywords": [
+    "llm",
+    "tokens",
+    "vercel",
+    "ai-sdk",
+    "token-budget"
+  ],
+  "license": "MIT",
+  "peerDependencies": {
+    "token-budget": "^0.1.0",
+    "react": ">=18"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@vitest/coverage-v8": "^2.1.0",
+    "@types/react": "^18.3.0",
+    "react": "^18.3.0",
+    "token-budget": "^0.1.0",
+    "tsup": "^8.3.0",
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0"
+  }
+}

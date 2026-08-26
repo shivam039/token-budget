@@ -1,0 +1,64 @@
+{
+  "name": "token-budget-tiktoken",
+  "version": "0.1.0",
+  "description": "tiktoken Tokenizer adapter for token-budget, backed by pure-JS js-tiktoken by default (with an optional Node-only native/WASM path).",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./native": {
+      "types": "./dist/native.d.ts",
+      "import": "./dist/native.js",
+      "require": "./dist/native.cjs"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "sideEffects": false,
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run build && npm run test"
+  },
+  "keywords": [
+    "llm",
+    "tokens",
+    "tiktoken",
+    "openai",
+    "token-budget"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "js-tiktoken": "^1.0.20"
+  },
+  "peerDependencies": {
+    "token-budget": "^0.1.0",
+    "tiktoken": ">=1.0.0"
+  },
+  "peerDependenciesMeta": {
+    "tiktoken": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@vitest/coverage-v8": "^2.1.0",
+    "tiktoken": "^1.0.20",
+    "token-budget": "^0.1.0",
+    "tsup": "^8.3.0",
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0"
+  }
+}
