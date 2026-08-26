@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { TokenBudget } from './budget.js';
-import type { AddMessageInput, BudgetMessage, ContentBlock } from './types.js';
+import type { AddMessageInput, BudgetMessage, ContentBlock, Tokenizer } from './types.js';
 
 /**
  * Contract a framework adapter package implements to be exercised by
@@ -101,6 +101,63 @@ export function runAdapterConformanceSuite<ExternalFormat>(adapter: AdapterUnder
 
       expect(rebuilt.getMessages()).toHaveLength(original.length);
       expect(rebuilt.stats().tokensUsed).toBeGreaterThan(0);
+    });
+  });
+}
+
+/**
+ * Shared conformance suite for tokenizer adapters (FR2-9.3, mirroring
+ * FR2-1.5.3's adapter suite). Call this inside a tokenizer package's own
+ * test file, passing an already-resolved `Tokenizer` (await any async
+ * factory first) — it registers `describe`/`it` blocks via vitest,
+ * verifying the `Tokenizer` contract: non-negative integer counts,
+ * determinism, `encode()`/`count()` self-consistency where `encode` is
+ * provided, rough monotonicity with text length, and drop-in
+ * compatibility with a real `TokenBudget`.
+ */
+export function runTokenizerConformanceSuite(name: string, tokenizer: Tokenizer): void {
+  describe(`tokenizer conformance: ${name}`, () => {
+    it('count() returns 0 for empty text', () => {
+      expect(tokenizer.count('')).toBe(0);
+    });
+
+    it('count() returns a non-negative integer for non-empty text', () => {
+      const n = tokenizer.count('Hello, world!');
+      expect(Number.isInteger(n)).toBe(true);
+      expect(n).toBeGreaterThanOrEqual(0);
+    });
+
+    it('count() is deterministic — same input, same output', () => {
+      const text = 'The quick brown fox jumps over the lazy dog.';
+      const first = tokenizer.count(text);
+      const second = tokenizer.count(text);
+      expect(second).toBe(first);
+    });
+
+    it('count() does not decrease as text grows (rough monotonicity)', () => {
+      const short = tokenizer.count('Hello');
+      const long = tokenizer.count('Hello, this is a much longer piece of representative sample text.');
+      expect(long).toBeGreaterThanOrEqual(short);
+    });
+
+    if (tokenizer.encode) {
+      it('encode() length matches count() (self-consistency)', () => {
+        const text = 'Self-consistency check between encode() and count().';
+        expect(tokenizer.encode!(text).length).toBe(tokenizer.count(text));
+      });
+
+      it('encode() returns a plain array of numbers', () => {
+        const encoded = tokenizer.encode!('hi');
+        expect(Array.isArray(encoded)).toBe(true);
+        expect(encoded.every((n) => typeof n === 'number')).toBe(true);
+      });
+    }
+
+    it('is a drop-in replacement for TokenBudget\'s tokenizer option', () => {
+      const budget = new TokenBudget({ maxTokens: 100_000, tokenizer });
+      const message = budget.addMessage({ role: 'user', content: 'Hello, world! This is a test message.' });
+      expect(message.tokens).toBeGreaterThan(0);
+      expect(budget.stats().tokensUsed).toBe(message.tokens);
     });
   });
 }

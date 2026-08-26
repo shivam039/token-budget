@@ -79,7 +79,7 @@ Construction throws a descriptive error if `reserve >= maxTokens`, or if
 
 | Method | Description |
 | --- | --- |
-| `addMessage(input)` | Appends a message, incrementally updates totals, returns the stored `BudgetMessage` (with generated `id`/`timestamp`/`tokens`). |
+| `addMessage(input)` | Appends a message, incrementally updates totals, returns the stored `BudgetMessage` (with generated `id`/`timestamp`/`tokens`). Throws if a caller-supplied `id` collides with an existing message — remove or edit it first. |
 | `removeMessage(id)` | Removes a message by id, returns `false` if not found. |
 | `editMessage(id, patch)` | Edits a message by id and recomputes totals; throws if not found. |
 | `clear()` | Empties the buffer. |
@@ -141,6 +141,8 @@ budget.on('evicted', (info) => console.log('Evicted', info.messages.length, 'mes
 budget.on('overflow', (info) => console.error('Cannot fit context:', info.reason));
 budget.on('strategy-error', (info) => console.error(`Strategy "${info.strategyName}" failed`, info.error));
 budget.on('decision', (report) => telemetry.record(report)); // your own sink — no built-in telemetry
+
+budget.listenerCount('warning'); // 1 — useful for leak-checking in long-running processes
 ```
 
 ### `explain()` — debugging strategy decisions
@@ -280,7 +282,8 @@ elapses, they don't cancel it.
 
 These are patterns, not bundled adapters — a `token-budget-persistence-*`
 package family may follow if community demand justifies it (see
-[Roadmap](#roadmap-not-in-this-release)).
+[`CONTRIBUTING.md`](../../CONTRIBUTING.md) for the community package
+naming convention).
 
 ## Strategies
 
@@ -507,6 +510,22 @@ new TokenBudget({
   its README's accuracy disclaimer before relying on it for anything
   precision-sensitive.
 
+Writing your own tokenizer package? Reuse the shared conformance suite
+this package exports, the same way the two above do in their own test
+suites:
+
+```ts
+import { runTokenizerConformanceSuite } from 'token-budget/test-utils';
+
+runTokenizerConformanceSuite('my-tokenizer', await createMyTokenizer());
+```
+
+It verifies non-negative integer counts, determinism, rough monotonicity
+with text length, `encode()`/`count()` self-consistency (when `encode` is
+provided), and drop-in compatibility as a `TokenBudget` `tokenizer` option.
+See [`CONTRIBUTING.md`](../../CONTRIBUTING.md) at the repo root for the
+full checklist and the community package naming convention.
+
 ## Framework adapters
 
 Thin, independently-versioned packages that convert `token-budget`'s
@@ -544,7 +563,17 @@ runAdapterConformanceSuite({
 It verifies round-trip fidelity, tool-call/tool-result atomicity,
 pinned-message handling, and post-conversion token accounting — call it
 inside your own `*.test.ts` file (requires `vitest`, an optional peer
-dependency of this export).
+dependency of this export). See [`CONTRIBUTING.md`](../../CONTRIBUTING.md)
+at the repo root for the full checklist and the community package naming
+convention, and [`COMPATIBILITY.md`](../../COMPATIBILITY.md) for how
+adapters document what they're tested against without pinning the real
+SDK as a dependency.
+
+## Cookbook
+
+Four common application shapes — a customer-support bot, a coding agent, a
+RAG chat app, and a long-form writing assistant — each with a runnable,
+tested configuration recipe: see [`COOKBOOK.md`](./COOKBOOK.md).
 
 ## Write your own strategy
 
@@ -600,10 +629,58 @@ source for the exact shape each uses (e.g. `src/strategies/priority.ts`).
 It's optional and purely additive: omit it and your strategy still works,
 it just won't show up in explain reports.
 
-## Roadmap (not in this release)
+## Scale guidance
 
-- **Performance/scale hardening**: a published benchmark suite at 1k/10k/50k/100k messages.
-- **Ecosystem docs**: a strategy cookbook, `CONTRIBUTING.md`, and a compatibility matrix.
+`addMessage` is O(1) amortized (incremental token accounting, no full
+re-scan); `getContext()`/`getContextSync()` applying `dropOldest`,
+`slidingWindow`, or `priority` is a single O(n) pass over the buffer. This
+is verified, not just claimed: `test/soak/scale.soak.ts`
+(`npm run test:soak`) benchmarks all three at 1k/10k/50k/100k messages
+(best-of-3 trials each, to filter out GC/scheduling noise) on every run
+and fails if per-message cost stops looking flat as the buffer grows.
+
+Reference measurements (Node v22.22.2, 4 vCPU Intel Xeon @ 2.80GHz, Linux
+x86_64 — `node --expose-gc` for accurate heap deltas; run
+`npm run test:soak` yourself to measure on your own hardware):
+
+| Messages | Strategy | `addMessage` (total) | `getContext` | Heap delta |
+| --- | --- | --- | --- | --- |
+| 1,000 | drop-oldest | 1.2ms | 1.6ms | 1.4MB |
+| 10,000 | drop-oldest | 15.8ms | 23.1ms | 16.2MB |
+| 50,000 | drop-oldest | 109.6ms | 80.5ms | 56.0MB |
+| 100,000 | drop-oldest | 325.6ms | 203.8ms | 116.2MB |
+| 1,000 | sliding-window | 2.2ms | 3.6ms | 1.6MB |
+| 10,000 | sliding-window | 21.2ms | 30.0ms | 15.8MB |
+| 50,000 | sliding-window | 109.1ms | 94.5ms | 56.6MB |
+| 100,000 | sliding-window | 347.0ms | 233.9ms | 117.7MB |
+| 1,000 | priority | 1.0ms | 1.1ms | 1.2MB |
+| 10,000 | priority | 12.4ms | 50.3ms | 12.3MB |
+| 50,000 | priority | 119.2ms | 198.2ms | 68.6MB |
+| 100,000 | priority | 336.5ms | 452.0ms | 136.0MB |
+
+(`summarize-oldest` isn't in this table — its cost is dominated by your
+`summarize` callback, typically a network call, not by `token-budget`'s
+own bookkeeping.)
+
+**Practical guidance:**
+- Tested up to 100,000 messages / ~1MB of buffer content — comfortably
+  fits in memory and stays fast at this scale on typical hardware.
+- Beyond that, or for very long-running processes, prefer periodic
+  compaction over letting the raw buffer grow unbounded: call
+  `budget.commit(ctx.messages)` each turn (see
+  [Persistence](#persistence) and summarize-oldest's [recursive
+  passes](#recursive-summarization)) so the buffer reflects only what
+  survived eviction/summarization, not the full unbounded history.
+  `getMessages()` returning the *full* history is a deliberate feature for
+  buffers you keep bounded this way — for a session you intend to run
+  forever, periodically `serialize()` and reset with a fresh, smaller
+  buffer rather than relying on `getMessages()` to stay small on its own.
+- A long-running-process memory/leak check (event listener accumulation,
+  stream state cleanup across thousands of add/evict/stream cycles) lives
+  in `test/soak/memory.soak.ts`, part of the same `test:soak` script. Soak
+  tests run in CI on a schedule (weekly), not on every commit — see
+  [`.github/workflows/soak.yml`](../../.github/workflows/soak.yml) at the
+  repo root.
 
 ## Non-goals
 

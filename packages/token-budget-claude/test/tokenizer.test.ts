@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { TokenBudget } from 'token-budget';
+import { runTokenizerConformanceSuite } from 'token-budget/test-utils';
 import { createClaudeTokenizer, calibrate } from '../src/index.js';
 
 describe('createClaudeTokenizer', () => {
@@ -80,3 +81,9 @@ describe('calibrate', () => {
     expect(calibrated.count(text)).toBe(actualTokens);
   });
 });
+
+// FR2-9.3: run the shared tokenizer conformance suite against this
+// package's real tokenizer (resolved once, up front, since the suite
+// itself is synchronous). No encode() is exposed here (see above), so the
+// suite's encode()-dependent checks are skipped automatically.
+runTokenizerConformanceSuite('claude (best-effort approximation)', await createClaudeTokenizer());

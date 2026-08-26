@@ -89,7 +89,11 @@ function foldStreamParts(parts: Array<string | ContentBlock>): BudgetMessage['co
  * never silently overflow a model's context window.
  */
 export class TokenBudget {
-  private messages: BudgetMessage[] = [];
+  // A Map (not an array) so addMessage/removeMessage/editMessage are O(1)
+  // — no O(n) findIndex-by-id, no O(n) splice-shift on removal — while
+  // still iterating in insertion order (a standard JS Map guarantee),
+  // which every ordering-sensitive method here relies on (FR2-8.4).
+  private messages = new Map<string, BudgetMessage>();
   private totalTokens = 0;
   private maxTokensValue: number;
   private reserveValue: number;
@@ -195,12 +199,21 @@ export class TokenBudget {
     this.emitter.off(event, handler);
   }
 
+  /** Number of currently-registered listeners for `event` — useful for leak-checking (FR2-8.3). */
+  listenerCount<K extends TokenBudgetEventName>(event: K): number {
+    return this.emitter.listenerCount(event);
+  }
+
   // ---- buffer management --------------------------------------------------
 
-  /** Appends a message and incrementally recomputes running totals (FR-3.1). */
+  /** Appends a message and incrementally recomputes running totals (FR-3.1). Throws if `input.id` collides with an existing message. */
   addMessage(input: AddMessageInput): BudgetMessage {
+    const id = input.id ?? this.generateId();
+    if (input.id !== undefined && this.messages.has(id)) {
+      throw new Error(`TokenBudget: a message with id "${id}" already exists. Use editMessage() to update it, or removeMessage() first.`);
+    }
     const message: BudgetMessage = {
-      id: input.id ?? this.generateId(),
+      id,
       role: input.role,
       content: input.content,
       name: input.name,
@@ -212,7 +225,7 @@ export class TokenBudget {
     };
     message.tokens = this.computeTokens(message);
 
-    this.messages.push(message);
+    this.messages.set(id, message);
     this.totalTokens += message.tokens;
 
     if (message.tokens > this.effectiveBudget) {
@@ -229,29 +242,28 @@ export class TokenBudget {
 
   /** Removes a message by id and recomputes totals (FR-3.5). Returns false if not found. */
   removeMessage(id: string): boolean {
-    const index = this.messages.findIndex((m) => m.id === id);
-    if (index === -1) return false;
-    const [removed] = this.messages.splice(index, 1);
-    this.totalTokens -= removed?.tokens ?? 0;
+    const removed = this.messages.get(id);
+    if (!removed) return false;
+    this.messages.delete(id);
+    this.totalTokens -= removed.tokens ?? 0;
     this.checkWarning();
     return true;
   }
 
   /** Edits a message by id and recomputes totals (FR-3.5). Throws if not found. */
   editMessage(id: string, patch: Partial<Omit<BudgetMessage, 'id'>>): BudgetMessage {
-    const index = this.messages.findIndex((m) => m.id === id);
-    if (index === -1) throw new Error(`TokenBudget: no message with id "${id}".`);
-    const existing = this.messages[index]!;
+    const existing = this.messages.get(id);
+    if (!existing) throw new Error(`TokenBudget: no message with id "${id}".`);
     const updated: BudgetMessage = { ...existing, ...patch, id: existing.id };
     updated.tokens = this.computeTokens(updated);
     this.totalTokens += updated.tokens - (existing.tokens ?? 0);
-    this.messages[index] = updated;
+    this.messages.set(id, updated); // Map.set on an existing key preserves its original iteration position
     this.checkWarning();
     return updated;
   }
 
   clear(): void {
-    this.messages = [];
+    this.messages = new Map();
     this.totalTokens = 0;
     this.checkWarning();
   }
@@ -268,8 +280,8 @@ export class TokenBudget {
    * every time.
    */
   commit(messages: BudgetMessage[]): void {
-    this.messages = [...messages];
-    this.totalTokens = this.messages.reduce((sum, m) => sum + (m.tokens ?? this.computeTokens(m)), 0);
+    this.messages = new Map(messages.map((m) => [m.id, m]));
+    this.totalTokens = messages.reduce((sum, m) => sum + (m.tokens ?? this.computeTokens(m)), 0);
     this.checkWarning();
   }
 
@@ -354,7 +366,7 @@ export class TokenBudget {
 
   /** Raw, unfiltered buffer contents in insertion order (FR-3.7). */
   getMessages(): BudgetMessage[] {
-    return [...this.messages];
+    return [...this.messages.values()];
   }
 
   /** Previews a message's token cost without mutating buffer state (FR-5.3). */
@@ -381,8 +393,8 @@ export class TokenBudget {
       tokensRemaining: Math.max(0, this.effectiveBudget - tokensUsed),
       maxTokens: this.maxTokensValue,
       reserve: this.reserveValue,
-      messageCount: this.messages.length,
-      pinnedCount: this.messages.reduce((n, m) => n + (m.pinned ? 1 : 0), 0),
+      messageCount: this.messages.size,
+      pinnedCount: [...this.messages.values()].reduce((n, m) => n + (m.pinned ? 1 : 0), 0),
       streaming,
     };
   }
@@ -445,7 +457,7 @@ export class TokenBudget {
   /** Strategy-applied, ready-to-send context (FR-3.7, FR-5.1). Async: strategies may be async. */
   async getContext(): Promise<ContextResult> {
     this.assertNoOpenStreamsIfConfigured();
-    const original = [...this.messages];
+    const original = [...this.messages.values()];
     const steps: StrategyStepTrace[] = [];
     const ctx = this.buildStrategyContext(this.totalTokens, steps);
     let strategized: BudgetMessage[];
@@ -472,7 +484,7 @@ export class TokenBudget {
           'use getContext() instead of getContextSync().',
       );
     }
-    const original = [...this.messages];
+    const original = [...this.messages.values()];
     const steps: StrategyStepTrace[] = [];
     const ctx = this.buildStrategyContext(this.totalTokens, steps);
     let strategized: BudgetMessage[];

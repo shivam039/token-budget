@@ -1,4 +1,5 @@
-import { runAdapterConformanceSuite, type AdapterUnderTest } from '../src/test-utils.js';
+import { runAdapterConformanceSuite, runTokenizerConformanceSuite, type AdapterUnderTest } from '../src/test-utils.js';
+import { createEstimateTokenizer } from '../src/tokenizer.js';
 import type { AddMessageInput, BudgetMessage } from '../src/types.js';
 
 /**
@@ -25,3 +26,12 @@ const passthroughAdapter: AdapterUnderTest<ExternalMessage[]> = {
 };
 
 runAdapterConformanceSuite(passthroughAdapter);
+
+/**
+ * Dogfoods `runTokenizerConformanceSuite` against the built-in estimate
+ * tokenizer, so the suite itself is covered end-to-end — the same shape
+ * `token-budget-tiktoken` and `token-budget-claude` run against their real
+ * tokenizers in their own test suites.
+ */
+runTokenizerConformanceSuite('estimate (latin profile)', createEstimateTokenizer());
+
