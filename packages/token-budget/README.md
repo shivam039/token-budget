@@ -130,13 +130,50 @@ dependency, so it works identically in the browser):
 | `overflow` | A single message exceeds the whole effective budget by itself, or the buffer is still over budget after the strategy ran (e.g. pinned content alone doesn't fit). | `{ reason, message?, tokensUsed, effectiveBudget }` |
 | `evicted` | A strategy dropped and/or summarized messages. | `{ strategyApplied, messages, replacedBy }` |
 | `strategy-error` | The configured strategy throws (e.g. a `summarize` callback that exhausts its retries with `onError: 'throw'`). | `{ strategyName, error, recovered }` |
+| `decision` | Every time a strategy runs — mirrors `explain()`'s output. | `ExplainReport` |
 
 ```ts
 budget.on('warning', (stats) => console.warn('Approaching budget', stats));
 budget.on('evicted', (info) => console.log('Evicted', info.messages.length, 'messages via', info.strategyApplied));
 budget.on('overflow', (info) => console.error('Cannot fit context:', info.reason));
 budget.on('strategy-error', (info) => console.error(`Strategy "${info.strategyName}" failed`, info.error));
+budget.on('decision', (report) => telemetry.record(report)); // your own sink — no built-in telemetry
 ```
+
+### `explain()` — debugging strategy decisions
+
+`explain()` returns a structured, JSON-serializable trace of the most
+recent `getContext()`/`getContextSync()` call: which strategy (or chain of
+strategies, in order) ran, tokens before/after each step, and a
+human-readable reason for every message that was evicted or folded into a
+summary.
+
+```ts
+const ctx = budget.getContextSync();
+const report = budget.explain();
+// {
+//   steps: [
+//     { strategyName: 'sliding-window', tokensBefore: 512, tokensAfter: 300, messagesConsidered: 40,
+//       evicted: [{ id: 'msg_12', reason: 'outside the last 20 turns (position 3 of 40)' }], synthesized: [] },
+//     { strategyName: 'drop-oldest', tokensBefore: 300, tokensAfter: 180, messagesConsidered: 22,
+//       evicted: [{ id: 'msg_15', reason: 'oldest non-pinned message (position 0 of 22)' }], synthesized: [] },
+//   ],
+//   tokensBefore: 512, tokensAfter: 180, tokensRemaining: 20,
+//   strategyApplied: 'chain(sliding-window -> drop-oldest)', timestamp: 1730000000000,
+// }
+```
+
+`explain()` returns `undefined` until `getContext()`/`getContextSync()` has
+run at least once. Pass `devMode: true` to the constructor to
+`console.debug`-log every report automatically (default `false` — never
+logs unless explicitly opted in). Building the trace costs roughly what
+the `evicted` event already costs (proportional to what was actually
+evicted, not to buffer size) — negligible if you never call `explain()` or
+listen to `decision`, and free of any built-in telemetry either way.
+
+Writing a custom strategy? Call the optional `ctx.trace?.(step)` sink with
+the same shape to participate in `explain()` — see [Write your own
+strategy](#write-your-own-strategy).
 
 ## Strategies
 
@@ -307,6 +344,7 @@ interface StrategyContext {
   countTokens: (messages: BudgetMessage[]) => number;
   countMessage: (message: BudgetMessage) => number;
   makeSynthetic: (content: string, sourceIds: string[]) => BudgetMessage;
+  trace?: (step: StrategyStepTrace) => void; // optional: report to explain()/'decision'
 }
 ```
 
@@ -342,11 +380,16 @@ See [`examples/customStrategy.ts`](./examples/customStrategy.ts) for the
 full, tested version (exercised in
 [`test/custom-strategy.test.ts`](./test/custom-strategy.test.ts)).
 
+To participate in `explain()`/the `decision` event, call `ctx.trace?.(...)`
+once per `apply()` with a `StrategyStepTrace` — see the built-in strategies'
+source for the exact shape each uses (e.g. `src/strategies/priority.ts`).
+It's optional and purely additive: omit it and your strategy still works,
+it just won't show up in explain reports.
+
 ## Roadmap (not in this release)
 
 - **Streaming**: `beginStream`/`appendStreamChunk`/`endStream` for
   incremental token accounting on a message being streamed in.
-- **`explain()`**: a structured trace of the most recent strategy run, for debugging.
 - **More framework adapters**: `token-budget-langchain`, `token-budget-vercel-ai`.
 - **Tokenizer adapters**: `token-budget-tiktoken`, `token-budget-claude`.
 - **Persistence hooks**: `serialize()`/`deserialize()`.

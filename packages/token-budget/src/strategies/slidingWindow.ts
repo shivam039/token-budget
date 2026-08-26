@@ -1,6 +1,7 @@
 import type { BudgetMessage, Strategy, StrategyContext } from '../types.js';
 import { groupIntoUnits, filterByUnits } from '../internal/units.js';
 import { evictOldestUnitsToBudget } from '../internal/trim.js';
+import { survivorIdSet, evictedEntries } from '../internal/trace.js';
 
 export interface SlidingWindowOptions {
   /** Number of most recent non-pinned turns (atomic units) to keep. */
@@ -20,15 +21,36 @@ export function slidingWindow(options: SlidingWindowOptions): Strategy {
     name: 'sliding-window',
     sync: true,
     apply(messages: BudgetMessage[], ctx: StrategyContext): BudgetMessage[] {
+      const tokensBefore = ctx.countTokens(messages);
       const units = groupIntoUnits(messages);
       const nonPinned = units.filter((u) => !u.pinned);
       const keep = new Set(nonPinned.slice(Math.max(0, nonPinned.length - turns)));
 
-      let survivors = units.filter((u) => u.pinned || keep.has(u));
-      if (options.enforceBudget) {
-        survivors = evictOldestUnitsToBudget(survivors, ctx);
+      const windowed = units.filter((u) => u.pinned || keep.has(u));
+      const survivors = options.enforceBudget ? evictOldestUnitsToBudget(windowed, ctx) : windowed;
+      const result = filterByUnits(messages, survivors);
+
+      if (ctx.trace) {
+        const windowedIds = survivorIdSet(windowed);
+        const survivorIds = survivorIdSet(survivors);
+        const evicted = [
+          ...evictedEntries(messages, windowedIds, (_m, i) => `outside the last ${turns} turns (position ${i} of ${messages.length})`),
+          ...evictedEntries(
+            messages.filter((m) => windowedIds.has(m.id)),
+            survivorIds,
+            () => `enforceBudget: window still over budget, dropped oldest-first`,
+          ),
+        ];
+        ctx.trace({
+          strategyName: 'sliding-window',
+          tokensBefore,
+          tokensAfter: ctx.countTokens(result),
+          messagesConsidered: messages.length,
+          evicted,
+          synthesized: [],
+        });
       }
-      return filterByUnits(messages, survivors);
+      return result;
     },
   };
 }

@@ -11,9 +11,11 @@ import type {
   AddMessageInput,
   BudgetMessage,
   ContextResult,
+  ExplainReport,
   Stats,
   Strategy,
   StrategyContext,
+  StrategyStepTrace,
   TokenBudgetConfig,
   TokenBudgetEvents,
   TokenBudgetEventName,
@@ -35,6 +37,8 @@ export class TokenBudget {
   private emitter = new Emitter<TokenBudgetEvents>();
   private warned = false;
   private idCounter = 0;
+  private devMode: boolean;
+  private lastExplainReport: ExplainReport | undefined;
 
   constructor(config: TokenBudgetConfig) {
     if (typeof config.maxTokens !== 'number' || !Number.isFinite(config.maxTokens) || config.maxTokens <= 0) {
@@ -58,6 +62,7 @@ export class TokenBudget {
     this.reserveValue = reserve;
     this.warningThreshold = warningThreshold;
     this.strategy = config.strategy ?? dropOldest();
+    this.devMode = config.devMode ?? false;
 
     const tokenizer =
       config.tokenizer && config.tokenizer !== 'estimate' ? config.tokenizer : createEstimateTokenizer(config.charsPerToken);
@@ -214,7 +219,8 @@ export class TokenBudget {
   /** Strategy-applied, ready-to-send context (FR-3.7, FR-5.1). Async: strategies may be async. */
   async getContext(): Promise<ContextResult> {
     const original = [...this.messages];
-    const ctx = this.buildStrategyContext(this.totalTokens);
+    const steps: StrategyStepTrace[] = [];
+    const ctx = this.buildStrategyContext(this.totalTokens, steps);
     let strategized: BudgetMessage[];
     try {
       strategized = await this.strategy.apply(original, ctx);
@@ -222,7 +228,7 @@ export class TokenBudget {
       this.emitter.emit('strategy-error', { strategyName: this.strategy.name, error, recovered: false });
       throw error;
     }
-    return this.finalizeContext(original, strategized);
+    return this.finalizeContext(original, strategized, steps);
   }
 
   /**
@@ -239,7 +245,8 @@ export class TokenBudget {
       );
     }
     const original = [...this.messages];
-    const ctx = this.buildStrategyContext(this.totalTokens);
+    const steps: StrategyStepTrace[] = [];
+    const ctx = this.buildStrategyContext(this.totalTokens, steps);
     let strategized: BudgetMessage[];
     try {
       const result = this.strategy.apply(original, ctx);
@@ -254,7 +261,17 @@ export class TokenBudget {
       this.emitter.emit('strategy-error', { strategyName: this.strategy.name, error, recovered: false });
       throw error;
     }
-    return this.finalizeContext(original, strategized);
+    return this.finalizeContext(original, strategized, steps);
+  }
+
+  /**
+   * Structured trace of the most recent `getContext()`/`getContextSync()`
+   * call (FR2-4.1) — strategy name(s) in chain order, tokens before/after
+   * each step, and a human-readable reason per evicted/summarized message.
+   * Returns `undefined` if neither has been called yet.
+   */
+  explain(): ExplainReport | undefined {
+    return this.lastExplainReport;
   }
 
   // ---- internals ------------------------------------------------------------
@@ -282,7 +299,7 @@ export class TokenBudget {
     }
   }
 
-  private buildStrategyContext(tokensUsed: number): StrategyContext {
+  private buildStrategyContext(tokensUsed: number, steps: StrategyStepTrace[]): StrategyContext {
     const countMessage = (m: BudgetMessage): number => m.tokens ?? this.computeTokens(m);
     return {
       effectiveBudget: this.effectiveBudget,
@@ -290,6 +307,7 @@ export class TokenBudget {
       countMessage,
       countTokens: (msgs: BudgetMessage[]) => msgs.reduce((sum, m) => sum + countMessage(m), 0),
       makeSynthetic: (content: string, sourceIds: string[]) => this.makeSynthetic(content, sourceIds),
+      trace: (step: StrategyStepTrace) => steps.push(step),
     };
   }
 
@@ -305,7 +323,7 @@ export class TokenBudget {
     return message;
   }
 
-  private finalizeContext(original: BudgetMessage[], strategized: BudgetMessage[]): ContextResult {
+  private finalizeContext(original: BudgetMessage[], strategized: BudgetMessage[], steps: StrategyStepTrace[]): ContextResult {
     const originalIds = new Set(original.map((m) => m.id));
     const resultIds = new Set(strategized.map((m) => m.id));
     const evictedMessages = original.filter((m) => !resultIds.has(m.id));
@@ -327,6 +345,24 @@ export class TokenBudget {
         effectiveBudget: this.effectiveBudget,
       });
     }
+
+    const tokensBefore = original.reduce((sum, m) => sum + (m.tokens ?? this.computeTokens(m)), 0);
+    const report: ExplainReport = {
+      steps,
+      tokensBefore,
+      tokensAfter: tokensUsed,
+      tokensRemaining: Math.max(0, this.effectiveBudget - tokensUsed),
+      strategyApplied: this.strategy.name,
+      timestamp: Date.now(),
+    };
+    this.lastExplainReport = report;
+    if (this.devMode) {
+      const consoleObj: { debug?: (...args: unknown[]) => void } | undefined = (
+        globalThis as { console?: { debug?: (...args: unknown[]) => void } }
+      ).console;
+      consoleObj?.debug?.('[token-budget] decision', report);
+    }
+    this.emitter.emit('decision', report);
 
     return {
       messages: strategized,

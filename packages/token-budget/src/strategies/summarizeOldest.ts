@@ -41,11 +41,15 @@ export function summarizeOldest(options: SummarizeOldestOptions): Strategy {
     async apply(messages: BudgetMessage[], ctx: StrategyContext): Promise<BudgetMessage[]> {
       const triggerAt = preThreshold * ctx.effectiveBudget;
       const tokens = ctx.countTokens(messages);
-      if (tokens <= triggerAt) return messages;
+      const noop = (): BudgetMessage[] => {
+        ctx.trace?.({ strategyName: 'summarize-oldest', tokensBefore: tokens, tokensAfter: tokens, messagesConsidered: messages.length, evicted: [], synthesized: [] });
+        return messages;
+      };
+      if (tokens <= triggerAt) return noop();
 
       const units = groupIntoUnits(messages);
       const evictable = units.filter((u) => !u.pinned);
-      if (evictable.length === 0) return messages;
+      if (evictable.length === 0) return noop();
 
       const block: typeof evictable = [];
       if (options.blockSize && options.blockSize > 0) {
@@ -94,6 +98,18 @@ export function summarizeOldest(options: SummarizeOldestOptions): Strategy {
           continue;
         }
         result.push(message);
+      }
+
+      if (ctx.trace) {
+        const reason = `summarized into synthetic message ${synthetic.id} (covering ${blockIds.size} messages)`;
+        ctx.trace({
+          strategyName: 'summarize-oldest',
+          tokensBefore: tokens,
+          tokensAfter: ctx.countTokens(result),
+          messagesConsidered: messages.length,
+          evicted: blockMessages.map((m) => ({ id: m.id, reason })),
+          synthesized: [{ id: synthetic.id, sourceIds: [...blockIds], reason: `first-pass summary of ${blockIds.size} messages` }],
+        });
       }
       return result;
     },

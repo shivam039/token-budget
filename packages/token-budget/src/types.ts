@@ -59,6 +59,13 @@ export interface StrategyContext {
    * should use this so downstream eviction accounting stays consistent.
    */
   makeSynthetic: (content: string, sourceIds: string[]) => BudgetMessage;
+  /**
+   * Optional trace sink (Phase 2 §3.4). When present, a strategy that
+   * evicts or summarizes anything should call this once with a summary of
+   * what it did and why, so `budget.explain()`/the `decision` event can
+   * report it. Absent when nobody is listening — cheap to skip.
+   */
+  trace?: (step: StrategyStepTrace) => void;
 }
 
 export interface Strategy {
@@ -113,11 +120,47 @@ export interface ContextResult {
   strategyApplied: string;
 }
 
+/** One message a strategy step evicted or folded into a synthetic summary, with a human-readable reason. */
+export interface TraceDecision {
+  id: string;
+  reason: string;
+}
+
+/**
+ * One strategy's contribution to a `getContext()`/`getContextSync()` call.
+ * A plain strategy produces exactly one; a `chain([...])` produces one per
+ * member, in the order they ran (FR2-4.3).
+ */
+export interface StrategyStepTrace {
+  strategyName: string;
+  tokensBefore: number;
+  tokensAfter: number;
+  messagesConsidered: number;
+  evicted: TraceDecision[];
+  /** Synthetic summary messages this step introduced, if any (summarize-oldest). */
+  synthesized: Array<{ id: string; sourceIds: string[]; reason: string }>;
+}
+
+/**
+ * Structured trace of the most recent `getContext()`/`getContextSync()`
+ * call (FR2-4.1). JSON-serializable: no circular refs, no functions.
+ */
+export interface ExplainReport {
+  steps: StrategyStepTrace[];
+  tokensBefore: number;
+  tokensAfter: number;
+  tokensRemaining: number;
+  strategyApplied: string;
+  timestamp: number;
+}
+
 export interface TokenBudgetEvents {
   warning: (info: WarningInfo) => void;
   overflow: (info: OverflowInfo) => void;
   evicted: (info: EvictedInfo) => void;
   'strategy-error': (info: StrategyErrorInfo) => void;
+  /** Fired every time a strategy runs, mirroring `explain()`'s output (FR2-4.4). */
+  decision: (report: ExplainReport) => void;
 }
 
 export type TokenBudgetEventName = keyof TokenBudgetEvents;
@@ -143,4 +186,9 @@ export interface TokenBudgetConfig {
   messageOverhead?: (message: BudgetMessage) => number;
   /** Per-content-block-type token counters, keyed by `ContentBlock.type`. */
   contentCounters?: Record<string, ContentCounter>;
+  /**
+   * When true, `console.debug`-logs every `ExplainReport` as it's produced
+   * (FR2-4.5). Default false — never logs unless explicitly opted in.
+   */
+  devMode?: boolean;
 }
