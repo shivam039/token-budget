@@ -1,22 +1,31 @@
 # token-budget
 
+**Keep long-running AI agents inside their context window.**
+
 [![npm version](https://img.shields.io/npm/v/%40shivam.dixit%2Ftoken-budget)](https://www.npmjs.com/package/@shivam.dixit/token-budget)
 [![CI](https://github.com/shivam039/token-budget/actions/workflows/ci.yml/badge.svg)](https://github.com/shivam039/token-budget/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/github/license/shivam039/token-budget)](./LICENSE)
 [![Node >= 18](https://img.shields.io/badge/node-%3E%3D18-339933)](./packages/token-budget/package.json)
 
-Multi-turn LLM conversations grow until they blow the context window —
-then you get a hard 400 from the provider, or a summarization job bolted
-on after the fact that quietly drops your system prompt or splits a
-tool-call from its result. **token-budget keeps the conversation inside
-its token budget automatically**, with a strategy you choose (drop
-oldest, sliding window, priority, summarize, or your own), and tells you
-exactly what it did and why.
+A coding agent, an autonomous agent, or anything with a tool-calling loop
+accumulates conversation history, tool calls, tool results, terminal
+output, file contents, and retrieved documents — and eventually the
+context window becomes too small to hold all of it. Then you get a hard
+400 from the provider, or a summarization job bolted on after the fact
+that quietly drops your system prompt or splits a tool-call from its
+result. **token-budget keeps that context inside its token budget
+automatically**, with a strategy you choose (drop oldest, sliding
+window, priority, summarize, or your own), atomic tool-call/tool-result
+pairing so a provider never rejects an orphaned result, and tells you
+exactly what it did and why via `explain()`.
 
-It's not a framework. It doesn't call a model API itself (except through
-a `summarize` callback you supply). It's the buffer-management layer
-underneath whatever you're already using — raw provider SDKs, Vercel AI
-SDK, or LangChain.js.
+It's context-management infrastructure, not a tokenizer and not an
+agent framework: it doesn't count tokens itself for a specific model
+(bring your own tokenizer, or use the built-in estimator), it doesn't
+orchestrate tool calls or agent loops, and it doesn't call a model API
+(except through a `summarize` callback you supply). It's the
+buffer-management layer underneath whatever you're already using — raw
+provider SDKs, Vercel AI SDK, or LangChain.js.
 
 ```sh
 npm install @shivam.dixit/token-budget
@@ -94,6 +103,28 @@ is real output from `budget.explain()`, not illustrative pseudo-JSON:
 Your application can tell a user (or a compliance log) *why* something
 left the context — not just that it did. This is the thing most
 truncation code, hand-rolled or built into a framework, doesn't give you.
+
+**Answering the questions you'll actually ask in a debugger:**
+
+```ts
+const report = budget.explain()!;
+
+report.tokensBefore - report.tokensAfter;                    // tokens this call saved
+report.strategyApplied;                                      // which strategy (or chain) ran
+report.steps.flatMap((s) => s.evicted);                       // every eviction, with a reason
+report.steps.flatMap((s) => s.synthesized);                   // every summary this call created
+
+// "Why did *this* message disappear?"
+report.steps.flatMap((s) => s.evicted).find((e) => e.id === messageId)?.reason;
+
+// "Why was *this* message preserved?" — explain() reports what left;
+// anything still in ctx.messages and not synthetic answers "it wasn't evicted":
+ctx.messages.some((m) => m.id === messageId && !m.metadata?.['synthetic']);
+```
+
+See [`examples/coding-agent-context`](./examples/coding-agent-context) for
+all of this against a realistic session, printed as a readable report
+rather than raw JSON.
 
 ## `getContext()` vs `commit()`
 
@@ -199,6 +230,7 @@ each package's own README for its API, usage, and known limitations.
 
 ## Examples
 
+- [`examples/coding-agent-context`](./examples/coding-agent-context) — the flagship demo: a realistic coding-agent session (file reads, terminal output, a full test run) that overflows its budget, with a before/after token count and the full `explain()` trace.
 - [`examples/openai-long-conversation`](./examples/openai-long-conversation) — a 300-turn conversation kept under budget, converted to OpenAI's wire format.
 - [`examples/coding-agent`](./examples/coding-agent) — tool-call/tool-result atomicity, made concrete.
 - [`packages/token-budget/COOKBOOK.md`](./packages/token-budget/COOKBOOK.md) — four smaller, tested recipes (customer-support bot, coding agent, RAG chat, long-form writing assistant).
@@ -210,6 +242,17 @@ each package's own README for its API, usage, and known limitations.
 - [`CONTRIBUTING.md`](./CONTRIBUTING.md) — how to add a community tokenizer, strategy, or framework adapter; the `token-budget-{tokenizer,strategy,adapter}-*` naming convention; and the review bar.
 - [`COMPATIBILITY.md`](./COMPATIBILITY.md) — what each adapter/tokenizer package is tested against, and why they use structural typing instead of a real SDK dependency.
 - [`CHANGELOG.md`](./CHANGELOG.md) — engineering history, phase by phase.
+
+**Project direction** (audience: contributors and anyone evaluating
+where this project is headed, not required reading to use the library):
+[`docs/PRODUCT_AUDIT.md`](./docs/PRODUCT_AUDIT.md) — what exists today,
+what's production-ready, what's intentionally not built yet;
+[`docs/DO_NOT_BUILD_YET.md`](./docs/DO_NOT_BUILD_YET.md) — the explicit
+scope-creep guard; [`docs/MCP.md`](./docs/MCP.md) and
+[`docs/PYTHON_ROADMAP.md`](./docs/PYTHON_ROADMAP.md) — two specific
+deferred-until-evidence decisions; [`docs/FIRST_USERS.md`](./docs/FIRST_USERS.md)
+and [`docs/USER_VALIDATION.md`](./docs/USER_VALIDATION.md) — how this
+project finds and tracks its first real users.
 
 ## Development
 

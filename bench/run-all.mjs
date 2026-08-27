@@ -5,7 +5,13 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
 const here = dirname(fileURLToPath(import.meta.url));
-const scripts = ['incremental-accounting-bench.mjs', 'context-management-bench.mjs', 'context-management-realistic-bench.mjs', 'tokenizer-bench.mjs'];
+const scripts = [
+  'incremental-accounting-bench.mjs',
+  'context-management-bench.mjs',
+  'context-management-realistic-bench.mjs',
+  'tokenizer-bench.mjs',
+  'tool-output-truncation-bench.mjs',
+];
 
 for (const script of scripts) {
   console.log(`\n${'='.repeat(70)}`);
