@@ -1,5 +1,5 @@
 import { type Meter, type Tracer, trace, metrics } from '@opentelemetry/api';
-import type { TokenBudget, UsageReport } from '@shivam.dixit/token-budget';
+import type { TokenBudget, UsageReport } from 'token-budget';
 
 export interface OTelConfig {
   meterProviderName?: string;

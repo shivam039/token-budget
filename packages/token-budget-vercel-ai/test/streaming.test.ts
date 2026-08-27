@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { TokenBudget } from '@shivam.dixit/token-budget';
+import { TokenBudget } from 'token-budget';
 import { streamTextIntoBudget } from '../src/index.js';
 
 async function* fakeTextStream(chunks: string[]): AsyncIterable<string> {

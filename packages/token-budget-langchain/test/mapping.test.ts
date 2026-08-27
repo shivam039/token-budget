@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { TokenBudget } from '@shivam.dixit/token-budget';
+import { TokenBudget } from 'token-budget';
 import { toLangChainMessages, fromLangChainMessages } from '../src/index.js';
 import type { LangChainMessageLike } from '../src/index.js';
 

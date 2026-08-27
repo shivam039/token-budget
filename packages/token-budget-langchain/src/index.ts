@@ -1,4 +1,4 @@
-import type { AddMessageInput, BudgetMessage, ContentBlock, TokenBudget } from '@shivam.dixit/token-budget';
+import type { AddMessageInput, BudgetMessage, ContentBlock, TokenBudget } from 'token-budget';
 import type { LangChainContentPart, LangChainMessageLike, LangChainMessageType, LangChainToolCall } from './types.js';
 
 export type { LangChainContentPart, LangChainMessageLike, LangChainMessageType, LangChainToolCall } from './types.js';

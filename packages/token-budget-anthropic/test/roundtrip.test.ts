@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { TokenBudget } from '@shivam.dixit/token-budget';
+import { TokenBudget } from 'token-budget';
 import { toAnthropicMessages, fromAnthropicContext, fromAnthropicResponse } from '../src/index.js';
 import type { AnthropicResponse } from '../src/index.js';
 

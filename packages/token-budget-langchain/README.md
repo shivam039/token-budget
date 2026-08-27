@@ -12,7 +12,7 @@ without pulling the package in as a dependency.
 ## Install
 
 ```sh
-npm install @shivam.dixit/token-budget @shivam.dixit/token-budget-langchain
+npm install token-budget token-budget-langchain
 ```
 
 `token-budget` is a peer dependency (semver range, not pinned).
@@ -20,8 +20,8 @@ npm install @shivam.dixit/token-budget @shivam.dixit/token-budget-langchain
 ## Usage: message conversion
 
 ```ts
-import { TokenBudget } from '@shivam.dixit/token-budget';
-import { toLangChainMessages, fromLangChainMessages } from '@shivam.dixit/token-budget-langchain';
+import { TokenBudget } from 'token-budget';
+import { toLangChainMessages, fromLangChainMessages } from 'token-budget-langchain';
 
 const budget = new TokenBudget({ maxTokens: 128000 });
 budget.addMessage({ role: 'system', content: 'You are a helpful assistant.', pinned: true });
@@ -41,7 +41,7 @@ Drop it into a `ConversationChain` (or any code expecting LangChain's
 place of `BufferMemory`:
 
 ```ts
-import { TokenBudgetMemory } from '@shivam.dixit/token-budget-langchain';
+import { TokenBudgetMemory } from 'token-budget-langchain';
 
 const memory = new TokenBudgetMemory({
   budget: new TokenBudget({ maxTokens: 128000, strategy: strategies.slidingWindow({ turns: 20 }) }),

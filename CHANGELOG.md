@@ -21,6 +21,13 @@ app for inspecting a `serialize()` dump.
 [`token-budget-py`](./packages/token-budget-py) (a Python port) is
 started but explicitly partial — see its own README for exact scope.
 
+Published all 10 packages to npm, initially under the `@shivam.dixit/`
+scope (a new npm account could not clear first-publish restrictions on
+an unscoped name at the time), then renamed to unscoped names
+(`token-budget`, `token-budget-openai`, etc.) once the unscoped names
+were confirmed available — the public identity is the project name, not
+the maintainer's.
+
 Still to come: an ecosystem registry / scorer conformance suite, a VS
 Code extension, a docs playground, and 1.0 release readiness.
 

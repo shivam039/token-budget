@@ -10,7 +10,7 @@ anything precision-sensitive.** This is an estimate, not ground truth.
 ## Install
 
 ```sh
-npm install @shivam.dixit/token-budget @shivam.dixit/token-budget-claude
+npm install token-budget token-budget-claude
 ```
 
 `token-budget` is a peer dependency. `token-budget-tiktoken` (and its
@@ -20,8 +20,8 @@ engine this approximation is built on.
 ## Usage
 
 ```ts
-import { TokenBudget } from '@shivam.dixit/token-budget';
-import { createClaudeTokenizer } from '@shivam.dixit/token-budget-claude';
+import { TokenBudget } from 'token-budget';
+import { createClaudeTokenizer } from 'token-budget-claude';
 
 const tokenizer = await createClaudeTokenizer(); // async: loads cl100k_base once
 const budget = new TokenBudget({ maxTokens: 200000, tokenizer }); // count() is sync from here on
@@ -34,7 +34,7 @@ some sample texts, use them to fit a scaling ratio for your own content
 distribution:
 
 ```ts
-import { createClaudeTokenizer, calibrate } from '@shivam.dixit/token-budget-claude';
+import { createClaudeTokenizer, calibrate } from 'token-budget-claude';
 
 const ratio = await calibrate([
   { text: 'a real prompt from your app', actualTokens: 42 }, // from Claude's usage.input_tokens, etc.

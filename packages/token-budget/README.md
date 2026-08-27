@@ -17,13 +17,13 @@ overflows a model's context window.
 ## Install
 
 ```sh
-npm install @shivam.dixit/token-budget
+npm install token-budget
 ```
 
 ## Quickstart
 
 ```ts
-import { TokenBudget, strategies } from '@shivam.dixit/token-budget';
+import { TokenBudget, strategies } from 'token-budget';
 
 const budget = new TokenBudget({
   maxTokens: 8000,
@@ -290,7 +290,7 @@ naming convention).
 Pass a `costModel` and `model` to track cost alongside tokens:
 
 ```ts
-import { createCostModel } from '@shivam.dixit/token-budget-pricing'; // or bring your own CostModel
+import { createCostModel } from 'token-budget-pricing'; // or bring your own CostModel
 
 const budget = new TokenBudget({
   maxTokens: 128000,
@@ -486,7 +486,7 @@ atomic units until the budget is full, instead of purely age-based
 eviction:
 
 ```ts
-import { createEmbeddingsScorer } from '@shivam.dixit/token-budget-embeddings'; // or bring your own Scorer
+import { createEmbeddingsScorer } from 'token-budget-embeddings'; // or bring your own Scorer
 
 strategies.semanticRelevance({
   scorer: createEmbeddingsScorer({ embed: myEmbeddingFn }),
@@ -576,7 +576,7 @@ new TokenBudget({ maxTokens: 4000, tokenizer: myTokenizer });
 OpenAI's tokenizer (pure-JS by default, with an opt-in native/WASM path):
 
 ```ts
-import { createTiktokenTokenizer } from '@shivam.dixit/token-budget-tiktoken';
+import { createTiktokenTokenizer } from 'token-budget-tiktoken';
 
 const tokenizer = await createTiktokenTokenizer({ model: 'gpt-4o' }); // async: loads the encoding once
 new TokenBudget({ maxTokens: 128000, tokenizer }); // count()/encode() are sync from here on
@@ -612,7 +612,7 @@ this package exports, the same way the two above do in their own test
 suites:
 
 ```ts
-import { runTokenizerConformanceSuite } from '@shivam.dixit/token-budget/test-utils';
+import { runTokenizerConformanceSuite } from 'token-budget/test-utils';
 
 runTokenizerConformanceSuite('my-tokenizer', await createMyTokenizer());
 ```
@@ -647,7 +647,7 @@ you're writing your own adapter (for another provider, or a community
 package), reuse the shared conformance suite this package exports:
 
 ```ts
-import { runAdapterConformanceSuite } from '@shivam.dixit/token-budget/test-utils';
+import { runAdapterConformanceSuite } from 'token-budget/test-utils';
 
 runAdapterConformanceSuite({
   name: 'my-adapter',
@@ -707,8 +707,8 @@ If your strategy evicts anything, use the exported `groupIntoUnits` /
 insertion order is preserved exactly — the same helpers the built-ins use:
 
 ```ts
-import type { Strategy } from '@shivam.dixit/token-budget';
-import { groupIntoUnits, filterByUnits } from '@shivam.dixit/token-budget';
+import type { Strategy } from 'token-budget';
+import { groupIntoUnits, filterByUnits } from 'token-budget';
 
 // Keeps only the single most recent non-pinned turn once over budget.
 export function keepLatestOnly(): Strategy {

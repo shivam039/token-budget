@@ -15,7 +15,7 @@
 // per-add eviction loop), so it's rebuilt fresh per window, timed as a
 // whole — that rebuild cost is itself a real finding, not an oversight.
 
-import { TokenBudget, strategies } from '@shivam.dixit/token-budget';
+import { TokenBudget, strategies } from 'token-budget';
 import { trimMessages, HumanMessage, AIMessage } from '@langchain/core/messages';
 import { measure, measureAsync, fmtMs } from './lib/stats.mjs';
 import { messageText, approxCount } from './fixtures/messages.mjs';

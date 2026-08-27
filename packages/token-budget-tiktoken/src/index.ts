@@ -1,5 +1,5 @@
 import { Tiktoken, getEncodingNameForModel, type TiktokenBPE, type TiktokenEncoding, type TiktokenModel } from 'js-tiktoken/lite';
-import type { Tokenizer } from '@shivam.dixit/token-budget';
+import type { Tokenizer } from 'token-budget';
 
 export type { TiktokenEncoding, TiktokenModel } from 'js-tiktoken/lite';
 

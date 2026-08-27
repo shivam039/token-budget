@@ -11,7 +11,7 @@
 // total, because that's the obvious thing to write and it's *correct* —
 // it's just quadratic.
 
-import { TokenBudget } from '@shivam.dixit/token-budget';
+import { TokenBudget } from 'token-budget';
 import { measure, fmtMs } from './lib/stats.mjs';
 import { messageText, approxCount } from './fixtures/messages.mjs';
 
