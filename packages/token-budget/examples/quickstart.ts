@@ -1,4 +1,4 @@
-// In an installed project this import would be `from '@shivam.dixit/token-budget'`.
+// In an installed project this import would be `from 'token-budget'`.
 import { TokenBudget, strategies } from '../src/index.js';
 
 export async function runQuickstart() {

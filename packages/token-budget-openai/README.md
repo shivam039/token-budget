@@ -10,7 +10,7 @@ without pulling the SDK in as a dependency.
 ## Install
 
 ```sh
-npm install @shivam.dixit/token-budget @shivam.dixit/token-budget-openai
+npm install token-budget token-budget-openai
 ```
 
 `token-budget` is a peer dependency (semver range, not pinned).
@@ -18,8 +18,8 @@ npm install @shivam.dixit/token-budget @shivam.dixit/token-budget-openai
 ## Usage
 
 ```ts
-import { TokenBudget } from '@shivam.dixit/token-budget';
-import { toOpenAIMessages, fromOpenAIResponse, createOpenAIMessageOverhead } from '@shivam.dixit/token-budget-openai';
+import { TokenBudget } from 'token-budget';
+import { toOpenAIMessages, fromOpenAIResponse, createOpenAIMessageOverhead } from 'token-budget-openai';
 
 const budget = new TokenBudget({
   maxTokens: 128000,

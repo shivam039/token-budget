@@ -8,7 +8,7 @@ consumed, cost accrued, and messages evicted.
 ## Install
 
 ```sh
-npm install @shivam.dixit/token-budget @shivam.dixit/token-budget-otel @opentelemetry/api
+npm install token-budget token-budget-otel @opentelemetry/api
 ```
 
 `token-budget` and `@opentelemetry/api` are both peer dependencies
@@ -19,9 +19,9 @@ npm install @shivam.dixit/token-budget @shivam.dixit/token-budget-otel @opentele
 ## Usage
 
 ```ts
-import { TokenBudget } from '@shivam.dixit/token-budget';
-import { instrumentBudget } from '@shivam.dixit/token-budget-otel';
-import { createCostModel } from '@shivam.dixit/token-budget-pricing'; // optional, for cost metrics
+import { TokenBudget } from 'token-budget';
+import { instrumentBudget } from 'token-budget-otel';
+import { createCostModel } from 'token-budget-pricing'; // optional, for cost metrics
 
 const budget = new TokenBudget({
   maxTokens: 128000,

@@ -7,7 +7,7 @@ by default, with an optional Node-only native/WASM path.
 ## Install
 
 ```sh
-npm install @shivam.dixit/token-budget @shivam.dixit/token-budget-tiktoken
+npm install token-budget token-budget-tiktoken
 ```
 
 `token-budget` is a peer dependency. `js-tiktoken` is a regular dependency
@@ -17,8 +17,8 @@ needs the `tiktoken` package — install it yourself if you want it.
 ## Usage
 
 ```ts
-import { TokenBudget } from '@shivam.dixit/token-budget';
-import { createTiktokenTokenizer } from '@shivam.dixit/token-budget-tiktoken';
+import { TokenBudget } from 'token-budget';
+import { createTiktokenTokenizer } from 'token-budget-tiktoken';
 
 // Async: resolves the encoding for the model and loads its rank table
 // (dynamic import — only the encoding you use is fetched, not all of them).
@@ -45,7 +45,7 @@ first (`npm install tiktoken`) — it's an optional peer dependency, not
 pulled in by default:
 
 ```ts
-import { createTiktokenNativeTokenizer } from '@shivam.dixit/token-budget-tiktoken/native';
+import { createTiktokenNativeTokenizer } from 'token-budget-tiktoken/native';
 
 // Fully synchronous — no async factory needed; the native build loads
 // its WASM eagerly at import time in Node.

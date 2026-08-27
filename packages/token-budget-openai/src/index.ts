@@ -1,4 +1,4 @@
-import type { AddMessageInput, BudgetMessage, ContentBlock, TokenBudget } from '@shivam.dixit/token-budget';
+import type { AddMessageInput, BudgetMessage, ContentBlock, TokenBudget } from 'token-budget';
 import type { OpenAIContentPart, OpenAIImagePart, OpenAIMessage, OpenAIResponse, OpenAIToolCall } from './types.js';
 
 export type { OpenAIContentPart, OpenAIMessage, OpenAIResponse, OpenAIToolCall } from './types.js';

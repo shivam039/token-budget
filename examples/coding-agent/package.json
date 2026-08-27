@@ -8,7 +8,7 @@
     "start": "tsx src/index.ts"
   },
   "dependencies": {
-    "@shivam.dixit/token-budget": "^0.1.0"
+    "token-budget": "^0.1.0"
   },
   "devDependencies": {
     "tsx": "^4.19.0",

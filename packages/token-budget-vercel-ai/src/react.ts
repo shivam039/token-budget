@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
-import { TokenBudget } from '@shivam.dixit/token-budget';
-import type { TokenBudgetConfig } from '@shivam.dixit/token-budget';
+import { TokenBudget } from 'token-budget';
+import type { TokenBudgetConfig } from 'token-budget';
 
 export interface ChatMessageLike {
   role: string;

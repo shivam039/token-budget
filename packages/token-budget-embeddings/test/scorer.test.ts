@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { createEmbeddingsScorer } from '../src/index.js';
-import type { BudgetMessage, ScoringContext } from '@shivam.dixit/token-budget';
+import type { BudgetMessage, ScoringContext } from 'token-budget';
 
 describe('token-budget-embeddings', () => {
   it('calculates cosine similarity correctly, caching repeated calls', async () => {
