@@ -53,8 +53,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          registry-url: 'https://registry.npmjs.org'
           cache: npm
+        # Deliberately no registry-url here: setting it makes setup-node write
+        # an empty-token auth line to .npmrc, which makes npm think this is a
+        # token-based publish instead of OIDC trusted publishing - it then
+        # fails with a misleading 404 instead of attempting OIDC at all.
 
       - name: Upgrade npm (OIDC trusted publishing needs npm >= 11.5.1)
         run: npm install -g npm@latest
