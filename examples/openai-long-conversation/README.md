@@ -11,8 +11,12 @@ OpenAI's Chat Completions message format via `token-budget-openai`.
 
 ## Run it
 
+Requires the one-time repo-root setup in [`../README.md`](../README.md)
+first (`npm install && npm run build`, so `token-budget`'s `dist/`
+exists for this example to import). Then:
+
 ```sh
-npm install
+cd examples/openai-long-conversation
 npm start
 ```
 

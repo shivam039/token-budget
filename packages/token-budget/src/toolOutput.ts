@@ -27,6 +27,24 @@ export interface TruncateToolOutputOptions {
 const defaultMarker = (omittedChars: number): string => `…[${omittedChars} chars cut]…`;
 
 /**
+ * Nudges a slice boundary back by one UTF-16 code unit if it would
+ * otherwise fall between a high surrogate and its paired low surrogate —
+ * `String.prototype.slice` operates on code units, not code points, so an
+ * unguarded boundary can split an emoji (or any astral-plane character)
+ * into two lone, malformed surrogates. Real tool output (file contents,
+ * terminal logs) routinely contains these, so this isn't a theoretical
+ * edge case.
+ */
+function safeBoundary(text: string, index: number): number {
+  if (index <= 0 || index >= text.length) return index;
+  const before = text.charCodeAt(index - 1);
+  const at = text.charCodeAt(index);
+  const isHighSurrogate = before >= 0xd800 && before <= 0xdbff;
+  const isLowSurrogate = at >= 0xdc00 && at <= 0xdfff;
+  return isHighSurrogate && isLowSurrogate ? index - 1 : index;
+}
+
+/**
  * Shrinks `text` to fit `maxTokens`, counted by `tokenizer` — for the one
  * case eviction strategies can't fix on their own: a *single* tool result
  * (a file dump, a verbose terminal log) that alone is larger than the
@@ -36,7 +54,10 @@ const defaultMarker = (omittedChars: number): string => `…[${omittedChars} cha
  * the message buffer, eviction, or `toolCallId` pairing, and doesn't
  * touch either; it's a content-prep step that composes with every
  * built-in strategy rather than replacing any of them. Returns `text`
- * unchanged if it already fits.
+ * unchanged if it already fits. Never splits a UTF-16 surrogate pair (an
+ * emoji or other astral-plane character right at the cut point) — the
+ * output is always well-formed, even if that means keeping one character
+ * fewer than the absolute token ceiling allows.
  *
  * Assumes `tokenizer.count` is monotonic non-decreasing in text length
  * (shortening text never increases its token count) — true for the
@@ -58,11 +79,11 @@ export function truncateToolOutput(
     const omitted = text.length - keepLength;
     if (omitted <= 0) return text;
     const markerText = marker(omitted);
-    if (keep === 'start') return text.slice(0, keepLength) + markerText;
-    if (keep === 'end') return markerText + text.slice(text.length - keepLength);
+    if (keep === 'start') return text.slice(0, safeBoundary(text, keepLength)) + markerText;
+    if (keep === 'end') return markerText + text.slice(safeBoundary(text, text.length - keepLength));
     const head = Math.ceil(keepLength / 2);
     const tail = keepLength - head;
-    return text.slice(0, head) + markerText + text.slice(text.length - tail);
+    return text.slice(0, safeBoundary(text, head)) + markerText + text.slice(safeBoundary(text, text.length - tail));
   };
 
   // Binary search for the largest keepLength (0..text.length-1) whose

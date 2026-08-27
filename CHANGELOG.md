@@ -6,6 +6,33 @@ how the project got here — useful for understanding *why* something is
 shaped the way it is, not for deciding whether to install it today (see
 the root [`README.md`](./README.md) for that).
 
+## Release-hardening pass
+
+Not a feature sprint — cleanup ahead of real user validation. Fixed a
+real bug found by testing (not assuming) the documented "clean checkout"
+promise: every example's `npm install && npm start` instructions failed
+on a truly fresh clone, because `token-budget`'s `dist/` isn't built
+until the repo-root `npm run build` runs first; corrected in all three
+example READMEs and `examples/README.md`. Found and fixed a genuine
+`truncateToolOutput()` correctness bug via targeted fuzzing: an
+unguarded slice boundary could split a UTF-16 surrogate pair (an emoji
+or other astral-plane character), leaving a malformed lone surrogate in
+the output — fixed with a boundary-safe slice helper, 5 new regression
+tests. Investigated removing `vitest` as an optional peer dependency of
+the core package (it only serves the opt-in `test-utils` sub-export);
+verified in practice that removing it breaks the conformance-suite
+feature in an npm-workspaces monorepo (a deduping issue, not a
+theoretical one) — kept it, documented why. Reordered the README to
+match a new-developer's actual question order (problem → audience → why
+not a tokenizer/DIY/LangChain → install → smallest example → realistic
+coding-agent example) and moved project-strategy docs (`PRODUCT_AUDIT`,
+`FIRST_USERS`, `USER_VALIDATION`, `DO_NOT_BUILD_YET`, `MCP`,
+`PYTHON_ROADMAP`) into one clearly-labeled section instead of
+interleaving them with usage docs. Corrected a stale benchmark version
+reference. Full monorepo build/typecheck/test verified clean throughout
+(378 tests, 0 failures) — see the session's own audit for the complete
+before/after.
+
 ## Product positioning pass
 
 An audit-first pass ([`docs/PRODUCT_AUDIT.md`](./docs/PRODUCT_AUDIT.md))

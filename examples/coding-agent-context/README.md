@@ -10,8 +10,12 @@ ones — that grows past a realistic 700-token budget, and exactly what
 
 ## Run it
 
+Requires the one-time repo-root setup in [`../README.md`](../README.md)
+first (`npm install && npm run build`, so `token-budget`'s `dist/`
+exists for this example to import). Then:
+
 ```sh
-npm install
+cd examples/coding-agent-context
 npm start
 ```
 

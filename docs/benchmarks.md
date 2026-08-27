@@ -173,8 +173,12 @@ output falls in.
   Node v22.22.2, Ubuntu 24.04, 4 vCPU Intel Xeon @ 2.80GHz. Re-run
   `npm run bench` for numbers on your own hardware.
 - **Versions**: `gpt-tokenizer@4.0.0`, `llm-token-counter@1.0.0`,
-  `@langchain/core@1.2.9`, `@shivam.dixit/token-budget`/
-  `@shivam.dixit/token-budget-tiktoken@0.1.1`.
+  `@langchain/core@1.2.9` (real npm-installed competitor packages).
+  `token-budget`/`token-budget-tiktoken` are benchmarked as this repo's
+  current commit, workspace-linked — not a published npm version — since
+  the bench suite builds and runs against local source, not a registry
+  install. See [`bench/README.md`](../bench/README.md) for the full
+  environment table.
 - **Iterations**: every script warms up (discarded) before timing, then
   runs multiple trials and reports **median and p95**, not a single run
   — see [`bench/lib/stats.mjs`](../bench/lib/stats.mjs). Trial counts are
