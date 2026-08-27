@@ -1,4 +1,4 @@
-import type { CostModel, Role } from 'token-budget';
+import type { CostModel, Role } from '@shivam.dixit/token-budget';
 
 /**
  * Public model pricing table, in USD per 1 token (not per 1M/1K — matches

@@ -11,7 +11,7 @@ the SDK in as a dependency.
 ## Install
 
 ```sh
-npm install token-budget token-budget-vercel-ai
+npm install @shivam.dixit/token-budget @shivam.dixit/token-budget-vercel-ai
 ```
 
 `token-budget` is a peer dependency. `react` is an optional peer
@@ -20,8 +20,8 @@ dependency, needed only for the `token-budget-vercel-ai/react` subpath.
 ## Usage
 
 ```ts
-import { TokenBudget } from 'token-budget';
-import { toVercelMessages, fromVercelMessages, streamTextIntoBudget, reconcileUsage } from 'token-budget-vercel-ai';
+import { TokenBudget } from '@shivam.dixit/token-budget';
+import { toVercelMessages, fromVercelMessages, streamTextIntoBudget, reconcileUsage } from '@shivam.dixit/token-budget-vercel-ai';
 import { streamText } from 'ai';
 
 const budget = new TokenBudget({ maxTokens: 128000, reserve: 4096 });
@@ -45,7 +45,7 @@ console.log(reconcileUsage(finalMessage, usage));
 
 ```tsx
 import { useChat } from 'ai/react';
-import { useTokenBudget } from 'token-budget-vercel-ai/react';
+import { useTokenBudget } from '@shivam.dixit/token-budget-vercel-ai/react';
 
 function Chat() {
   const { messages } = useChat();

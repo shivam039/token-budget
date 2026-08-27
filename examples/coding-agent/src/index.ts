@@ -8,7 +8,7 @@
 //
 // Run it: npm install && npm start
 
-import { TokenBudget, strategies } from 'token-budget';
+import { TokenBudget, strategies } from '@shivam.dixit/token-budget';
 
 const budget = new TokenBudget({
   maxTokens: 120,

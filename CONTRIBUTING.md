@@ -49,7 +49,7 @@ Then run the shared conformance suite against your resolved tokenizer
 instance, inside your package's own test file:
 
 ```ts
-import { runTokenizerConformanceSuite } from 'token-budget/test-utils';
+import { runTokenizerConformanceSuite } from '@shivam.dixit/token-budget/test-utils';
 import { createYourTokenizer } from '../src/index.js';
 
 runTokenizerConformanceSuite('your-tokenizer-name', await createYourTokenizer());
@@ -94,7 +94,7 @@ real SDK as a dependency; see [`COMPATIBILITY.md`](./COMPATIBILITY.md) for
 why). Then run the shared conformance suite:
 
 ```ts
-import { runAdapterConformanceSuite, type AdapterUnderTest } from 'token-budget/test-utils';
+import { runAdapterConformanceSuite, type AdapterUnderTest } from '@shivam.dixit/token-budget/test-utils';
 
 const adapter: AdapterUnderTest<YourExternalFormat> = {
   name: 'your-framework',

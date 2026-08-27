@@ -21,7 +21,7 @@ the buffer to a fixed number of recent turns, which is cheaper and more
 predictable than summarization for this shape of chat.
 
 ```ts
-import { TokenBudget, strategies } from 'token-budget';
+import { TokenBudget, strategies } from '@shivam.dixit/token-budget';
 
 const budget = new TokenBudget({
   maxTokens: 2000,
@@ -50,7 +50,7 @@ important — instead of purely age-based eviction, which would drop
 still-relevant content just as readily as stale content.
 
 ```ts
-import { TokenBudget, strategies } from 'token-budget';
+import { TokenBudget, strategies } from '@shivam.dixit/token-budget';
 
 const budget = new TokenBudget({
   maxTokens: 70,
@@ -81,7 +81,7 @@ instead of silently dropping them, so the model still has a thread to
 follow even after many turns.
 
 ```ts
-import { TokenBudget, strategies } from 'token-budget';
+import { TokenBudget, strategies } from '@shivam.dixit/token-budget';
 
 const budget = new TokenBudget({
   maxTokens: 150,
@@ -114,7 +114,7 @@ next — `getContext()` itself never mutates the buffer (see the main
 README's "Recursive summarization" section for why).
 
 ```ts
-import { TokenBudget, strategies } from 'token-budget';
+import { TokenBudget, strategies } from '@shivam.dixit/token-budget';
 
 const budget = new TokenBudget({
   maxTokens: 150,

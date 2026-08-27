@@ -1,6 +1,6 @@
 import { get_encoding, encoding_for_model } from 'tiktoken';
 import type { TiktokenEncoding, TiktokenModel } from 'tiktoken';
-import type { Tokenizer } from 'token-budget';
+import type { Tokenizer } from '@shivam.dixit/token-budget';
 
 export type { TiktokenEncoding, TiktokenModel } from 'tiktoken';
 

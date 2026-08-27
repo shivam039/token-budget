@@ -9,8 +9,8 @@
 // the request payload it *would* send instead, so the example runs
 // (and demonstrates the token-budget part) with zero setup.
 
-import { TokenBudget, strategies } from 'token-budget';
-import { toOpenAIMessages } from 'token-budget-openai';
+import { TokenBudget, strategies } from '@shivam.dixit/token-budget';
+import { toOpenAIMessages } from '@shivam.dixit/token-budget-openai';
 
 const MODEL = 'gpt-4o-mini';
 

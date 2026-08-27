@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { instrumentBudget } from '../src/index.js';
-import { TokenBudget } from 'token-budget';
+import { TokenBudget } from '@shivam.dixit/token-budget';
 
 // Mock OTel since we just want to verify it calls the API correctly.
 vi.mock('@opentelemetry/api', () => {

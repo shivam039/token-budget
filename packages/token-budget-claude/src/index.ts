@@ -1,5 +1,5 @@
-import { createTiktokenTokenizer } from 'token-budget-tiktoken';
-import type { Tokenizer } from 'token-budget';
+import { createTiktokenTokenizer } from '@shivam.dixit/token-budget-tiktoken';
+import type { Tokenizer } from '@shivam.dixit/token-budget';
 
 /**
  * FR2-2.2.1: Anthropic has never published Claude's real tokenizer, so

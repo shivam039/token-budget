@@ -1,4 +1,4 @@
-import type { BudgetMessage, Scorer, ScoringContext } from 'token-budget';
+import type { BudgetMessage, Scorer, ScoringContext } from '@shivam.dixit/token-budget';
 
 export interface EmbeddingFunction {
   (text: string): Promise<number[]>;

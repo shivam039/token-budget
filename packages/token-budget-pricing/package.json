@@ -1,6 +1,6 @@
 {
-  "name": "token-budget-pricing",
-  "version": "0.1.3",
+  "name": "@shivam.dixit/token-budget-pricing",
+  "version": "0.1.2",
   "description": "Static per-model pricing lookup table and CostModel for token-budget cost accounting.",
   "repository": {
     "type": "git",
@@ -46,11 +46,11 @@
   ],
   "license": "MIT",
   "peerDependencies": {
-    "token-budget": "^0.1.0"
+    "@shivam.dixit/token-budget": "^0.1.0"
   },
   "devDependencies": {
     "@vitest/coverage-v8": "^2.1.0",
-    "token-budget": "^0.1.0",
+    "@shivam.dixit/token-budget": "^0.1.0",
     "tsup": "^8.3.0",
     "typescript": "^5.6.0",
     "vitest": "^2.1.0"

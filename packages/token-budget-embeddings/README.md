@@ -8,7 +8,7 @@ package doesn't call out to any embedding API itself.
 ## Install
 
 ```sh
-npm install token-budget token-budget-embeddings
+npm install @shivam.dixit/token-budget @shivam.dixit/token-budget-embeddings
 ```
 
 `token-budget` is a peer dependency (semver range, not pinned).
@@ -16,8 +16,8 @@ npm install token-budget token-budget-embeddings
 ## Usage
 
 ```ts
-import { TokenBudget, strategies } from 'token-budget';
-import { createEmbeddingsScorer } from 'token-budget-embeddings';
+import { TokenBudget, strategies } from '@shivam.dixit/token-budget';
+import { createEmbeddingsScorer } from '@shivam.dixit/token-budget-embeddings';
 
 async function embed(text: string): Promise<number[]> {
   // Call your own embeddings API here (OpenAI, Cohere, a local model, ...).
