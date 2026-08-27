@@ -5,6 +5,26 @@ it's compared to here answers a different, narrower question — that's
 not a knock on them, it's the point: pick the right tool for the
 question you actually have.
 
+## Categories, briefly
+
+Five different jobs get grouped under "context/memory tooling" for LLM
+apps. `token-budget` is one of them, not a replacement for the other
+four:
+
+| Category | Answers | Examples |
+| --- | --- | --- |
+| **Tokenizers** | "How many tokens is this text?" | `gpt-tokenizer`, `tiktoken`, `token-budget-tiktoken` |
+| **Memory systems** | "What should I remember/retrieve about this user or task, across sessions?" | Vector-store-backed memory, mem0-style long-term recall |
+| **Agent frameworks** | "How do I orchestrate tool calls, planning, and multi-step agent loops?" | LangGraph, custom agent loops |
+| **Compression systems** | "How do I make this text shorter?" | Prompt-compression tools, generic summarizers |
+| **`token-budget`** | "Given a growing buffer and a hard token limit, what stays, in what order, and why?" | — |
+
+A real agent typically needs several of these at once: a tokenizer to
+count, an agent framework to orchestrate, maybe a memory system for
+cross-session recall — and `token-budget` to keep the *current* buffer
+inside budget without breaking a tool-call pair or losing the system
+prompt. They compose; none of them substitute for what the others do.
+
 ## token-budget vs. DIY (`messages.slice()` / `.shift()`)
 
 The real default alternative — most teams write this before reaching for

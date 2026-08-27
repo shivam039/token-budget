@@ -145,6 +145,28 @@ speed alone is your bottleneck, `gpt-tokenizer` may be the better choice
 — you can still use it as `token-budget`'s `tokenizer` option (anything
 with a `count(text)` method works).
 
+## Tool-output truncation benchmark
+
+Isolates the one new primitive this pass adds: `truncateToolOutput()` —
+shrinking a single oversized tool result (a file dump, a verbose CI log)
+to fit a token budget, before it becomes a message. Not a
+context-management benchmark (no message buffer, no eviction involved)
+and not compared against a competitor — there isn't a comparable library
+for this narrow a job. The only real question: does the binary-search
+implementation stay fast on realistic-to-pathological input sizes.
+
+| Input size | Cap | Median |
+| --- | --- | --- |
+| 5 KB | 500 tokens | 0.01 ms |
+| 52 KB | 1,000 tokens | 0.01 ms |
+| 521 KB | 1,000 tokens (worst case: keep ≪ text) | 0.01 ms |
+| 521 KB | 50,000 tokens (barely over budget) | 0.01 ms |
+
+All sub-millisecond even at the pathological "521 KB shrunk to 1,000
+tokens" case — the binary search does `O(log n)` tokenizer calls, not
+`O(n)`, so this isn't sensitive to input size in the range any real tool
+output falls in.
+
 ## Methodology
 
 - **Hardware/software**: see [`bench/README.md`](../bench/README.md) —
@@ -178,4 +200,5 @@ npm run bench:incremental
 npm run bench:context
 npm run bench:context:realistic
 npm run bench:tokenizer
+npm run bench:tool-output
 ```

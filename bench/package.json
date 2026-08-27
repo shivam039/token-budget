@@ -9,7 +9,8 @@
     "bench:tokenizer": "node tokenizer-bench.mjs",
     "bench:context": "node context-management-bench.mjs",
     "bench:context:realistic": "node context-management-realistic-bench.mjs",
-    "bench:incremental": "node incremental-accounting-bench.mjs"
+    "bench:incremental": "node incremental-accounting-bench.mjs",
+    "bench:tool-output": "node tool-output-truncation-bench.mjs"
   },
   "devDependencies": {
     "@shivam.dixit/token-budget": "^0.1.0",

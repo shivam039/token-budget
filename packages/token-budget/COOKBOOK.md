@@ -71,6 +71,40 @@ const { messages, evicted } = budget.getContextSync();
 Full example: [`examples/cookbook-coding-agent.ts`](./examples/cookbook-coding-agent.ts).
 Test: [`test/cookbook-coding-agent.test.ts`](./test/cookbook-coding-agent.test.ts).
 
+### One tool result too big for the whole budget
+
+`priority`/`dropOldest`/etc. evict whole messages — the right tool for
+"too many tool results," but not for "one tool result (a file dump, a
+verbose build log) that alone is bigger than the entire budget." For
+that, shrink the text **before** it becomes a message, with
+`truncateToolOutput`:
+
+```ts
+import { TokenBudget, truncateToolOutput, createEstimateTokenizer } from '@shivam.dixit/token-budget';
+
+const tokenizer = createEstimateTokenizer(); // or the same real tokenizer you pass TokenBudget
+const budget = new TokenBudget({ maxTokens: 8000, reserve: 500, tokenizer });
+const rawBuildLog = runBuild(); // could be 50,000+ tokens on its own
+
+budget.addMessage({
+  role: 'tool',
+  content: [{
+    type: 'tool_result',
+    // keep: 'end' (the default) — a build/test log's actionable line is
+    // almost always last (the failure, the final PASS/FAIL summary).
+    result: truncateToolOutput(rawBuildLog, 1000, tokenizer),
+  }],
+  toolCallId: buildCallId,
+});
+```
+
+This has nothing to do with eviction or `toolCallId` pairing — it's a
+content-prep step, so it composes with whichever strategy you're already
+using rather than replacing any part of it. Use `keep: 'start'` for a
+log whose relevant part is up front, or `keep: 'both'` (e.g. a file
+read, where the imports *and* the tail both matter) to keep a head and a
+tail with the middle cut.
+
 ## RAG chat
 
 Retrieved document chunks are pinned for the current turn (the app

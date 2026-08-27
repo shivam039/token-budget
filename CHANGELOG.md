@@ -6,6 +6,24 @@ how the project got here — useful for understanding *why* something is
 shaped the way it is, not for deciding whether to install it today (see
 the root [`README.md`](./README.md) for that).
 
+## Product positioning pass
+
+An audit-first pass ([`docs/PRODUCT_AUDIT.md`](./docs/PRODUCT_AUDIT.md))
+to turn the existing engineering work into a compelling coding-agent
+context-management story, without duplicating anything already built.
+Added: `examples/coding-agent-context` (a realistic, before/after
+budget-overflow demo); `truncateToolOutput()` in core (0.1.3) — a small
+primitive for the one gap the audit found (a single oversized tool
+result too big for the whole strategy machinery to help with), plus its
+own benchmark and COOKBOOK recipe; `explain()` documentation additions
+(no API change — the information was already there); README/
+`comparisons.md` positioning trims. Also added the process docs this
+pass is chartered to keep the project honest about scope:
+`docs/DO_NOT_BUILD_YET.md`, `docs/MCP.md`, `docs/PYTHON_ROADMAP.md`,
+`docs/FIRST_USERS.md`, `docs/USER_VALIDATION.md`. Explicitly did NOT
+build: an MCP server, a VS Code extension, a Python rewrite, or new
+provider adapters — see those docs for why.
+
 ## Phase 3 (in progress)
 
 Cost & usage accounting (`costModel`, `maxCost`,

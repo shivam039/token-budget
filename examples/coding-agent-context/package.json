@@ -1,0 +1,17 @@
+{
+  "name": "example-coding-agent-context",
+  "private": true,
+  "version": "0.0.0",
+  "description": "A realistic long-running coding-agent session (file reads, terminal output, test failures, errors) that outgrows its token budget, and how token-budget brings it back under budget without losing pinned instructions or breaking a tool-call/tool-result pair.",
+  "type": "module",
+  "scripts": {
+    "start": "tsx src/index.ts"
+  },
+  "dependencies": {
+    "@shivam.dixit/token-budget": "^0.1.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
+  }
+}

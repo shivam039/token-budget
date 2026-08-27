@@ -10,6 +10,12 @@ export { groupIntoUnits, filterByUnits } from './internal/units.js';
 export type { Unit } from './internal/units.js';
 export { unitTokens, evictOldestUnitsToBudget } from './internal/trim.js';
 
+// Shrinks a single oversized tool result (a file dump, a verbose terminal
+// log) to fit a token budget, before it ever becomes a message — see the
+// "Tool output" section in the README and `COOKBOOK.md`.
+export { truncateToolOutput } from './toolOutput.js';
+export type { TruncateToolOutputOptions } from './toolOutput.js';
+
 export type {
   AddMessageInput,
   BudgetMessage,
