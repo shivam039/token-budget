@@ -1,6 +1,6 @@
 {
   "name": "@shivam.dixit/token-budget-claude",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Best-effort Claude tokenizer approximation for token-budget, with a calibrate() utility to tune it against your own real usage data.",
   "repository": {
     "type": "git",

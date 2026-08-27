@@ -1,6 +1,6 @@
 {
   "name": "@shivam.dixit/token-budget-langchain",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "LangChain.js adapter for token-budget: BaseMessage[] conversion and a TokenBudgetMemory class.",
   "repository": {
     "type": "git",
