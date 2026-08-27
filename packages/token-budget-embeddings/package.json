@@ -1,6 +1,6 @@
 {
   "name": "@shivam.dixit/token-budget-embeddings",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Reference cosine-similarity Scorer for token-budget's semanticRelevance strategy \u2014 bring your own embedding function.",
   "repository": {
     "type": "git",
