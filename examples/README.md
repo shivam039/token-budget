@@ -4,6 +4,20 @@ Standalone, runnable mini-projects — each has its own `package.json` and
 can be copied out of this repo and run on its own once `token-budget` is
 published (they resolve to the local workspace build for now).
 
+**One-time setup, from the repo root, before running any example below**
+(the examples resolve `token-budget` via a workspace symlink, so the
+core package needs a real `dist/` to import — a plain `npm install`
+inside an example directory alone is not enough on a fresh clone):
+
+```sh
+git clone https://github.com/shivam039/token-budget.git
+cd token-budget
+npm install
+npm run build
+```
+
+Then `cd examples/<name> && npm start` for any example below.
+
 | Example | Demonstrates |
 | --- | --- |
 | [`openai-long-conversation`](./openai-long-conversation) | A 300-turn conversation kept under a 16,000-token budget with summarize-oldest + drop-oldest, converted to OpenAI's wire format via `token-budget-openai`. |

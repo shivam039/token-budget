@@ -19,6 +19,12 @@ window, priority, summarize, or your own), atomic tool-call/tool-result
 pairing so a provider never rejects an orphaned result, and tells you
 exactly what it did and why via `explain()`.
 
+**Who this is for:** anyone building a coding agent, an autonomous
+agent, or any tool-calling loop in TypeScript/JavaScript whose
+conversation history outgrows a fixed token budget — whether you're
+calling a provider SDK directly, or going through LangChain.js or the
+Vercel AI SDK.
+
 It's context-management infrastructure, not a tokenizer and not an
 agent framework: it doesn't count tokens itself for a specific model
 (bring your own tokenizer, or use the built-in estimator), it doesn't
@@ -30,6 +36,8 @@ provider SDKs, Vercel AI SDK, or LangChain.js.
 ```sh
 npm install @shivam.dixit/token-budget
 ```
+
+## The smallest useful example
 
 ```ts
 import { TokenBudget, strategies } from '@shivam.dixit/token-budget';
@@ -52,6 +60,85 @@ const { messages, tokensUsed, tokensRemaining, evicted } = await budget.getConte
 gives you the full reasoning trail. `pinned: true` means the system
 prompt survives every eviction strategy, and tool-call/tool-result pairs
 are always kept or dropped together — no dangling tool results.
+
+## Why not just use a tokenizer?
+
+A tokenizer answers "how many tokens is this text" — a
+`count(text): number` function, nothing more. token-budget answers a
+different question: "given a growing buffer and a hard limit, what
+should stay, in what order, and why." You need a tokenizer either way
+(token-budget ships a zero-dependency estimator, or plug in a real
+one — see [`token-budget-tiktoken`](./packages/token-budget-tiktoken)),
+but counting tokens doesn't tell you what to evict once you're over
+budget, how to keep a tool-call and its result together, or how to
+explain the decision afterward. Full, unflattering-where-warranted
+comparison against `gpt-tokenizer` specifically in
+[`docs/comparisons.md`](./docs/comparisons.md#token-budget-vs-gpt-tokenizer).
+
+## Why not just write this myself?
+
+Most teams do, and the first version is `messages.shift()` behind an
+`if`. It works until: the shift deletes the system prompt, or splits a
+tool-call from the result it's paired with (which most provider APIs
+reject outright), or someone asks "why did it drop *that* message" and
+there's no answer. token-budget is that logic, written once, with atomic
+tool-call pairing, pinned-message guarantees, and a decision trace built
+in — and benchmarked at 100k messages so it doesn't become the thing that
+falls over under load six months later (see [Scale
+guidance](./packages/token-budget/README.md#scale-guidance)). In our own
+[incremental-accounting benchmark](./docs/benchmarks.md#incremental-accounting-benchmark),
+recomputing the running token total from scratch on every add — the
+obvious way to write this — was ~100× slower than incremental accounting
+at 100,000 messages.
+
+## Why not LangChain's `trim_messages` / `SummarizationMiddleware`?
+
+If you're already all-in on LangChain, those cover the basics. Reach for
+token-budget instead when you need: the same eviction/summarization logic
+to work identically whether you're calling LangChain, the Vercel AI SDK,
+or a raw OpenAI/Anthropic client (no framework lock-in); a *chain* of
+strategies with a hard token-budget guarantee (sliding window, then
+summarize, with drop-oldest as a backstop); or an explainable trail of
+what was evicted and why, for debugging or an audit log — see
+[`explain()`](./packages/token-budget/README.md#explain--debugging-strategy-decisions).
+In our [context-management benchmark's realistic bounded-window
+scenario](./docs/benchmarks.md#realistic-benchmark--bounded-window-on-a-large-history)
+— a 50,000-message history queried at everyday window sizes, not a worst
+case — `trimMessages` consistently took 20+ seconds where token-budget
+took well under a second; full methodology and every number, including
+where this reflects `trimMessages` not being built for repeated,
+large-scale eviction, in [`docs/comparisons.md`](./docs/comparisons.md).
+
+## A realistic example: a coding agent's context, before and after
+
+The quickstart above is deliberately small. A real coding agent's
+context looks more like this — file reads, terminal output, a full test
+run, old turns mixed with recent ones — and it actually overflows a
+budget:
+
+```
+BEFORE — raw session, nothing evicted yet
+Messages:  13        Context: ~1111 tokens        Budget: ~600 tokens
+Status:    OVER BUDGET
+
+AFTER — token-budget applied: summarize-oldest, then priority as backstop
+Messages:  7 (was 13)   Context: ~531 tokens   Status: WITHIN BUDGET
+Saved:     ~580 tokens
+```
+
+That's real output, not illustrative — run it yourself:
+
+```sh
+git clone https://github.com/shivam039/token-budget.git
+cd token-budget
+npm install && npm run build   # builds the workspace once — required before any example
+cd examples/coding-agent-context
+npm start
+```
+
+No API keys required — the session and the summarizer are both
+deterministic, so the output above is exactly what you'll see. Full
+source: [`examples/coding-agent-context`](./examples/coding-agent-context).
 
 ## What this actually does
 
@@ -166,40 +253,6 @@ faster; you can use it as `token-budget`'s `tokenizer` option directly.
 Full numbers, published without spin, in
 [`docs/benchmarks.md`](./docs/benchmarks.md#raw-tokenizer-benchmark).
 
-## Why not just write this myself?
-
-Most teams do, and the first version is `messages.shift()` behind an
-`if`. It works until: the shift deletes the system prompt, or splits a
-tool-call from the result it's paired with (which most provider APIs
-reject outright), or someone asks "why did it drop *that* message" and
-there's no answer. token-budget is that logic, written once, with atomic
-tool-call pairing, pinned-message guarantees, and a decision trace built
-in — and benchmarked at 100k messages so it doesn't become the thing that
-falls over under load six months later (see [Scale
-guidance](./packages/token-budget/README.md#scale-guidance)). In our own
-[incremental-accounting benchmark](./docs/benchmarks.md#incremental-accounting-benchmark),
-recomputing the running token total from scratch on every add — the
-obvious way to write this — was ~100× slower than incremental accounting
-at 100,000 messages.
-
-## Why not LangChain's `trim_messages` / `SummarizationMiddleware`?
-
-If you're already all-in on LangChain, those cover the basics. Reach for
-token-budget instead when you need: the same eviction/summarization logic
-to work identically whether you're calling LangChain, the Vercel AI SDK,
-or a raw OpenAI/Anthropic client (no framework lock-in); a *chain* of
-strategies with a hard token-budget guarantee (sliding window, then
-summarize, with drop-oldest as a backstop); or an explainable trail of
-what was evicted and why, for debugging or an audit log — see
-[`explain()`](./packages/token-budget/README.md#explain--debugging-strategy-decisions).
-In our [context-management benchmark's realistic bounded-window
-scenario](./docs/benchmarks.md#realistic-benchmark--bounded-window-on-a-large-history)
-— a 50,000-message history queried at everyday window sizes, not a worst
-case — `trimMessages` consistently took 20+ seconds where token-budget
-took well under a second; full methodology and every number, including
-where this reflects `trimMessages` not being built for repeated,
-large-scale eviction, in [`docs/comparisons.md`](./docs/comparisons.md).
-
 ## Why not the provider's own truncation (e.g. OpenAI's `truncation_strategy`)?
 
 Provider-native truncation is opaque (it decides what to drop, not you),
@@ -239,20 +292,7 @@ each package's own README for its API, usage, and known limitations.
 
 - [`docs/benchmarks.md`](./docs/benchmarks.md) — reproducible performance numbers (`npm run bench`), including where token-budget loses.
 - [`docs/comparisons.md`](./docs/comparisons.md) — token-budget vs. DIY, `gpt-tokenizer`, LangChain, and provider-native truncation.
-- [`CONTRIBUTING.md`](./CONTRIBUTING.md) — how to add a community tokenizer, strategy, or framework adapter; the `token-budget-{tokenizer,strategy,adapter}-*` naming convention; and the review bar.
 - [`COMPATIBILITY.md`](./COMPATIBILITY.md) — what each adapter/tokenizer package is tested against, and why they use structural typing instead of a real SDK dependency.
-- [`CHANGELOG.md`](./CHANGELOG.md) — engineering history, phase by phase.
-
-**Project direction** (audience: contributors and anyone evaluating
-where this project is headed, not required reading to use the library):
-[`docs/PRODUCT_AUDIT.md`](./docs/PRODUCT_AUDIT.md) — what exists today,
-what's production-ready, what's intentionally not built yet;
-[`docs/DO_NOT_BUILD_YET.md`](./docs/DO_NOT_BUILD_YET.md) — the explicit
-scope-creep guard; [`docs/MCP.md`](./docs/MCP.md) and
-[`docs/PYTHON_ROADMAP.md`](./docs/PYTHON_ROADMAP.md) — two specific
-deferred-until-evidence decisions; [`docs/FIRST_USERS.md`](./docs/FIRST_USERS.md)
-and [`docs/USER_VALIDATION.md`](./docs/USER_VALIDATION.md) — how this
-project finds and tracks its first real users.
 
 ## Development
 
@@ -272,6 +312,19 @@ npm run bench          # reproducible performance benchmarks — see docs/benchm
 Each package also has its own scripts (`npm run test --workspace=token-budget-anthropic`).
 CI runs this same build/typecheck/test:coverage pipeline on Node 18, 20,
 and 22 for every push and PR — see [`.github/workflows/ci.yml`](./.github/workflows/ci.yml).
+
+## Project, contributing & roadmap
+
+Not required reading to use the library — for contributors and anyone
+evaluating where this project is headed and why it's scoped the way it
+is:
+
+- [`CONTRIBUTING.md`](./CONTRIBUTING.md) — how to add a community tokenizer, strategy, or framework adapter; the `token-budget-{tokenizer,strategy,adapter}-*` naming convention; and the review bar.
+- [`CHANGELOG.md`](./CHANGELOG.md) — engineering history, phase by phase.
+- [`docs/PRODUCT_AUDIT.md`](./docs/PRODUCT_AUDIT.md) — what exists today, what's production-ready, what's intentionally not built yet.
+- [`docs/DO_NOT_BUILD_YET.md`](./docs/DO_NOT_BUILD_YET.md) — the explicit scope-creep guard (no MCP server, no VS Code extension, no Python rewrite, etc. — and why).
+- [`docs/MCP.md`](./docs/MCP.md) and [`docs/PYTHON_ROADMAP.md`](./docs/PYTHON_ROADMAP.md) — two specific deferred-until-evidence decisions, reasoned through.
+- [`docs/FIRST_USERS.md`](./docs/FIRST_USERS.md) and [`docs/USER_VALIDATION.md`](./docs/USER_VALIDATION.md) — how this project finds and tracks its first real users.
 
 ## Status
 

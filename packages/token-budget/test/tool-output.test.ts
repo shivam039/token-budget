@@ -67,4 +67,55 @@ describe('truncateToolOutput', () => {
     expect(tokenizer.count(capped)).toBeLessThanOrEqual(200);
     expect(capped.endsWith('BUILD FAILED: see above')).toBe(true);
   });
+
+  it('returns an empty string unchanged (fits trivially, no marker inserted)', () => {
+    expect(truncateToolOutput('', 10, tokenizer)).toBe('');
+    expect(truncateToolOutput('', 0, tokenizer)).toBe('');
+  });
+
+  // Regression: String.prototype.slice operates on UTF-16 code units, not
+  // code points — an unguarded boundary can land between an emoji's two
+  // surrogate halves, leaving a lone/malformed surrogate in the output.
+  // Real tool output (file contents, terminal logs with status emoji)
+  // hits this routinely, not just in adversarial input.
+  describe('surrogate-pair safety (emoji / astral-plane characters)', () => {
+    const hasLoneSurrogate = (s: string) =>
+      /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/.test(s);
+
+    it('never splits a surrogate pair with keep: "start"', () => {
+      const text = '🎉'.repeat(50) + 'TAIL';
+      for (let maxTokens = 5; maxTokens <= 60; maxTokens++) {
+        const result = truncateToolOutput(text, maxTokens, tokenizer, { keep: 'start' });
+        expect(hasLoneSurrogate(result)).toBe(false);
+        expect(tokenizer.count(result)).toBeLessThanOrEqual(maxTokens);
+      }
+    });
+
+    it('never splits a surrogate pair with keep: "end" (the default)', () => {
+      const text = 'HEAD' + '🎉'.repeat(50);
+      for (let maxTokens = 5; maxTokens <= 60; maxTokens++) {
+        const result = truncateToolOutput(text, maxTokens, tokenizer);
+        expect(hasLoneSurrogate(result)).toBe(false);
+        expect(tokenizer.count(result)).toBeLessThanOrEqual(maxTokens);
+      }
+    });
+
+    it('never splits a surrogate pair with keep: "both"', () => {
+      const text = '🎉'.repeat(20) + 'a'.repeat(50) + '🎉'.repeat(20);
+      for (let maxTokens = 10; maxTokens <= 80; maxTokens++) {
+        const result = truncateToolOutput(text, maxTokens, tokenizer, { keep: 'both' });
+        expect(hasLoneSurrogate(result)).toBe(false);
+        expect(tokenizer.count(result)).toBeLessThanOrEqual(maxTokens);
+      }
+    });
+  });
+
+  it('handles a very large string (multi-MB) without exceeding the budget or hanging', () => {
+    const text = 'x'.repeat(5_000_000); // 5 MB
+    const start = performance.now();
+    const result = truncateToolOutput(text, 1000, tokenizer);
+    const elapsedMs = performance.now() - start;
+    expect(tokenizer.count(result)).toBeLessThanOrEqual(1000);
+    expect(elapsedMs).toBeLessThan(1000); // binary search over length, not linear scans per char
+  });
 });

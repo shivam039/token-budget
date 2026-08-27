@@ -623,6 +623,24 @@ provided), and drop-in compatibility as a `TokenBudget` `tokenizer` option.
 See [`CONTRIBUTING.md`](../../CONTRIBUTING.md) at the repo root for the
 full checklist and the community package naming convention.
 
+`@shivam.dixit/token-budget/test-utils` is the one part of this package
+that needs `vitest` — it's a thin wrapper around `describe`/`it`/`expect`,
+meant to be imported from your own `*.test.ts` file, where `vitest` is
+already your test runner. That's why `vitest` is declared as an
+**optional peer dependency** on this package (`peerDependenciesMeta:
+{ vitest: { optional: true } }`) rather than a real dependency: it
+signals the requirement to anyone using `test-utils` without forcing
+every consumer of the main `token-budget` import — which has zero
+runtime dependencies, `test-utils` included — to install it. (An earlier
+version of this pass tried dropping the peer declaration outright, on
+the theory that it was purely advisory; in practice, in an npm
+workspaces monorepo, it's what keeps `test-utils`'s `vitest` import
+deduped to the same instance as the consuming package's own test
+runner — without it, `describe()` calls inside the conformance suite
+silently register with a different `vitest` instance than the one
+running your tests, and the suite reports "no test suite found." Kept
+the peer declaration.)
+
 ## Framework adapters
 
 Thin, independently-versioned packages that convert `token-budget`'s
