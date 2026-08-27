@@ -8,7 +8,7 @@
     "examples/*"
   ],
   "scripts": {
-    "build": "npm run build --workspace=token-budget --workspace=token-budget-tiktoken --if-present && npm run build --workspaces --if-present",
+    "build": "npm run build --workspace=@shivam.dixit/token-budget --workspace=@shivam.dixit/token-budget-tiktoken --if-present && npm run build --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
     "test:coverage": "npm run test:coverage --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",

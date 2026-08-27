@@ -18,11 +18,11 @@ underneath whatever you're already using — raw provider SDKs, Vercel AI
 SDK, or LangChain.js.
 
 ```sh
-npm install token-budget
+npm install @shivam.dixit/token-budget
 ```
 
 ```ts
-import { TokenBudget, strategies } from 'token-budget';
+import { TokenBudget, strategies } from '@shivam.dixit/token-budget';
 
 const budget = new TokenBudget({
   maxTokens: 8000,

@@ -1,5 +1,5 @@
-import { runAdapterConformanceSuite, type AdapterUnderTest } from 'token-budget/test-utils';
-import type { AddMessageInput, BudgetMessage } from 'token-budget';
+import { runAdapterConformanceSuite, type AdapterUnderTest } from '@shivam.dixit/token-budget/test-utils';
+import type { AddMessageInput, BudgetMessage } from '@shivam.dixit/token-budget';
 import { toVercelMessages, fromVercelMessages } from '../src/index.js';
 import type { CoreMessage } from '../src/index.js';
 

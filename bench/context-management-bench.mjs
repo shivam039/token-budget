@@ -10,7 +10,7 @@
 // (that's tokenizer-bench.mjs). All three produce the same "survivors"
 // count at each size, confirming they're doing equivalent work.
 
-import { TokenBudget, strategies } from 'token-budget';
+import { TokenBudget, strategies } from '@shivam.dixit/token-budget';
 import { trimMessages, HumanMessage, AIMessage } from '@langchain/core/messages';
 import { measure, measureAsync, fmtMs } from './lib/stats.mjs';
 import { messageText, approxCount } from './fixtures/messages.mjs';

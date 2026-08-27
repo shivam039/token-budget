@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { TokenBudget } from 'token-budget';
+import { TokenBudget } from '@shivam.dixit/token-budget';
 import { toVercelMessages, fromVercelMessages, reconcileUsage } from '../src/index.js';
 import type { CoreMessage } from '../src/index.js';
 

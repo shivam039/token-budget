@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { TokenBudget } from 'token-budget';
+import { TokenBudget } from '@shivam.dixit/token-budget';
 import { toOpenAIMessages, fromOpenAIMessages, fromOpenAIResponse, createOpenAIMessageOverhead } from '../src/index.js';
 import type { OpenAIMessage, OpenAIResponse } from '../src/index.js';
 

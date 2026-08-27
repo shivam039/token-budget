@@ -10,7 +10,7 @@
 // see context-management-bench.mjs and incremental-accounting-bench.mjs
 // for the benchmarks that test what token-budget is actually for.
 
-import { createTiktokenTokenizer } from 'token-budget-tiktoken';
+import { createTiktokenTokenizer } from '@shivam.dixit/token-budget-tiktoken';
 import { countTokens as gptTokenizerCount } from 'gpt-tokenizer';
 import { countTokens as llmTokenCounterCount } from 'llm-token-counter';
 import { measure, fmtMs } from './lib/stats.mjs';

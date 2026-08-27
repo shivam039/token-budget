@@ -12,7 +12,7 @@ API) if that matters for your use case.
 ## Install
 
 ```sh
-npm install token-budget token-budget-pricing
+npm install @shivam.dixit/token-budget @shivam.dixit/token-budget-pricing
 ```
 
 `token-budget` is a peer dependency (semver range, not pinned).
@@ -20,8 +20,8 @@ npm install token-budget token-budget-pricing
 ## Usage
 
 ```ts
-import { TokenBudget } from 'token-budget';
-import { createCostModel } from 'token-budget-pricing';
+import { TokenBudget } from '@shivam.dixit/token-budget';
+import { createCostModel } from '@shivam.dixit/token-budget-pricing';
 
 const budget = new TokenBudget({
   maxTokens: 128000,

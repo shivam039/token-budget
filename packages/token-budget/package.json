@@ -1,5 +1,5 @@
 {
-  "name": "token-budget",
+  "name": "@shivam.dixit/token-budget",
   "version": "0.1.0",
   "description": "Keep multi-turn LLM conversations inside the context window: pluggable eviction/summarization strategies, cost accounting, and an explain() trace, for any model or framework.",
   "repository": {

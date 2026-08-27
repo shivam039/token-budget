@@ -9,7 +9,7 @@ without pulling the SDK in as a dependency.
 ## Install
 
 ```sh
-npm install token-budget token-budget-anthropic
+npm install @shivam.dixit/token-budget @shivam.dixit/token-budget-anthropic
 ```
 
 `token-budget` is a peer dependency (semver range, not pinned).
@@ -17,8 +17,8 @@ npm install token-budget token-budget-anthropic
 ## Usage
 
 ```ts
-import { TokenBudget } from 'token-budget';
-import { toAnthropicMessages, fromAnthropicResponse } from 'token-budget-anthropic';
+import { TokenBudget } from '@shivam.dixit/token-budget';
+import { toAnthropicMessages, fromAnthropicResponse } from '@shivam.dixit/token-budget-anthropic';
 
 const budget = new TokenBudget({ maxTokens: 200000, reserve: 4096 });
 budget.addMessage({ role: 'system', content: 'You are a helpful assistant.', pinned: true });

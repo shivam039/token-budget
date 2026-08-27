@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { TokenBudget } from 'token-budget';
-import { runTokenizerConformanceSuite } from 'token-budget/test-utils';
+import { TokenBudget } from '@shivam.dixit/token-budget';
+import { runTokenizerConformanceSuite } from '@shivam.dixit/token-budget/test-utils';
 import { createClaudeTokenizer, calibrate } from '../src/index.js';
 
 describe('createClaudeTokenizer', () => {
