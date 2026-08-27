@@ -1,5 +1,6 @@
 # token-budget
 
+[![npm version](https://img.shields.io/npm/v/%40shivam.dixit%2Ftoken-budget)](https://www.npmjs.com/package/@shivam.dixit/token-budget)
 [![CI](https://github.com/shivam039/token-budget/actions/workflows/ci.yml/badge.svg)](https://github.com/shivam039/token-budget/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/github/license/shivam039/token-budget)](./LICENSE)
 [![Node >= 18](https://img.shields.io/badge/node-%3E%3D18-339933)](./packages/token-budget/package.json)

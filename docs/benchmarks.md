@@ -151,8 +151,8 @@ with a `count(text)` method works).
   Node v22.22.2, Ubuntu 24.04, 4 vCPU Intel Xeon @ 2.80GHz. Re-run
   `npm run bench` for numbers on your own hardware.
 - **Versions**: `gpt-tokenizer@4.0.0`, `llm-token-counter@1.0.0`,
-  `@langchain/core@1.2.9`, `token-budget`/`token-budget-tiktoken` at this
-  repo's current commit (not yet a published version).
+  `@langchain/core@1.2.9`, `@shivam.dixit/token-budget`/
+  `@shivam.dixit/token-budget-tiktoken@0.1.1`.
 - **Iterations**: every script warms up (discarded) before timing, then
   runs multiple trials and reports **median and p95**, not a single run
   — see [`bench/lib/stats.mjs`](../bench/lib/stats.mjs). Trial counts are
