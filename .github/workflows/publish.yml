@@ -103,6 +103,22 @@ jobs:
           )
           for pkg in "${PACKAGES[@]}"; do
             echo "::group::Publishing $pkg"
-            npm publish -w "$pkg" --provenance --access public
+            # A version bump often only touches some packages (e.g. docs-only
+            # changes to a subset of adapters) — the ones left at an
+            # already-published version must not abort the whole run, or
+            # every package after them in this list silently never gets
+            # published. Only "already published" is tolerated; any other
+            # failure (auth, network, provenance) still fails the job.
+            if output=$(npm publish -w "$pkg" --provenance --access public 2>&1); then
+              echo "$output"
+            else
+              echo "$output"
+              if echo "$output" | grep -qi "cannot publish over the previously published version"; then
+                echo "::warning::$pkg is already published at this version — skipping, not a failure."
+              else
+                echo "::endgroup::"
+                exit 1
+              fi
+            fi
             echo "::endgroup::"
           done
