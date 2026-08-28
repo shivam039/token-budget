@@ -1,6 +1,6 @@
 {
   "name": "@shivam.dixit/token-budget-tiktoken",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "tiktoken Tokenizer adapter for token-budget, backed by pure-JS js-tiktoken by default (with an optional Node-only native/WASM path).",
   "repository": {
     "type": "git",

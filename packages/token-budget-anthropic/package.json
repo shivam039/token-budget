@@ -1,6 +1,6 @@
 {
   "name": "@shivam.dixit/token-budget-anthropic",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "Anthropic Messages API adapter for token-budget — context window and token budget management for Claude and Anthropic agents.",
   "repository": {
     "type": "git",
