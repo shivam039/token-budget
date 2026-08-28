@@ -5,29 +5,41 @@ vs. npm, as of this audit. Regenerate this table (don't hand-edit stale
 numbers) whenever a version changes — see the verification commands at
 the bottom.
 
-**HEAD**: `main` @ the SEO/AEO pass, version-bumped to carry the
-adapter keyword/description changes to npm (9 adapters 0.1.3 → 0.1.4 —
-patch bumps, metadata only, no API or behavior change). `token-budget`
-core stays at 0.1.4 — nothing in its published tarball (`dist/` +
-`packages/token-budget/README.md`) changed this pass, only the root
-README, `docs/`, and adapter `package.json` files, none of which core
-ships. Full monorepo `build && typecheck && test` clean: 378 tests, 0
-failures.
+**HEAD**: `main` @ the SEO/AEO pass (PR #10) plus a CI robustness fix
+(PR #11). All 10 publishable packages are now in sync between GitHub
+and npm at `0.1.4` — verified directly against the real registry
+below, not assumed. Full monorepo `build && typecheck && test` clean:
+378 tests, 0 failures.
 
-| Package | GitHub version | npm version (at last check) | Ready? | Action |
+| Package | GitHub version | npm version (verified) | Ready? | Action |
 | --- | --- | --- | --- | --- |
-| `token-budget` | 0.1.4 | 0.1.4 | ✅ | None — already in sync, nothing to republish. |
-| `token-budget-anthropic` | 0.1.4 | 0.1.3 | ✅ | Publish 0.1.4 (new keywords/description). |
-| `token-budget-openai` | 0.1.4 | 0.1.3 | ✅ | Publish 0.1.4. |
-| `token-budget-vercel-ai` | 0.1.4 | 0.1.3 | ✅ | Publish 0.1.4. |
-| `token-budget-tiktoken` | 0.1.4 | 0.1.3 | ✅ | Publish 0.1.4. |
-| `token-budget-langchain` | 0.1.4 | 0.1.3 | ✅ | Publish 0.1.4. |
-| `token-budget-claude` | 0.1.4 | 0.1.3 | ✅ | Publish 0.1.4. |
-| `token-budget-pricing` | 0.1.4 | 0.1.3 | ✅ | Publish 0.1.4. |
-| `token-budget-otel` | 0.1.4 | 0.1.3 | ✅ | Publish 0.1.4. |
-| `token-budget-embeddings` | 0.1.4 | 0.1.3 | ✅ | Publish 0.1.4. |
+| `token-budget` | 0.1.4 | 0.1.4 | ✅ | None — in sync. |
+| `token-budget-anthropic` | 0.1.4 | 0.1.4 | ✅ | None — in sync. |
+| `token-budget-openai` | 0.1.4 | 0.1.4 | ✅ | None — in sync. |
+| `token-budget-vercel-ai` | 0.1.4 | 0.1.4 | ✅ | None — in sync. |
+| `token-budget-tiktoken` | 0.1.4 | 0.1.4 | ✅ | None — in sync. |
+| `token-budget-langchain` | 0.1.4 | 0.1.4 | ✅ | None — in sync. |
+| `token-budget-claude` | 0.1.4 | 0.1.4 | ✅ | None — in sync. |
+| `token-budget-pricing` | 0.1.4 | 0.1.4 | ✅ | None — in sync. |
+| `token-budget-otel` | 0.1.4 | 0.1.4 | ✅ | None — in sync. |
+| `token-budget-embeddings` | 0.1.4 | 0.1.4 | ✅ | None — in sync. |
 | `token-budget-devtools` | 0.1.0 | *(not published, `private: true`)* | N/A | Intentionally unpublished. No action. |
 | `token-budget-py` | 0.1.0 | *(not on PyPI)* | N/A | Deliberately unpublished per `docs/PYTHON_ROADMAP.md`. No action. |
+
+## CI fix that unblocked this publish (PR #11)
+
+The first attempt to publish this round (run
+[33139771675](https://github.com/shivam039/token-budget/actions/runs/33139771675))
+failed immediately: `token-budget` core was already published at
+0.1.4 with nothing changed, it's first in the publish script's package
+list, and GitHub Actions' default `bash -e` aborts a `run:` step on
+the first non-zero exit — so the 9 adapters that actually needed
+0.1.4 were never even attempted. Fixed in
+`.github/workflows/publish.yml` to tolerate specifically "cannot
+publish over the previously published version" (logged as a warning,
+loop continues) while still hard-failing on any other error. Re-run
+([33139986708](https://github.com/shivam039/token-budget/actions/runs/33139986708))
+published all 9 adapters successfully.
 
 ## Why only the adapters bumped this time
 
