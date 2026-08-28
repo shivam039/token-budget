@@ -1,6 +1,6 @@
 {
   "name": "@shivam.dixit/token-budget-pricing",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Static per-model pricing lookup table and CostModel for token-budget cost accounting.",
   "repository": {
     "type": "git",
