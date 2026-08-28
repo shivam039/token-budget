@@ -93,14 +93,32 @@ Rules for using this:
 
 ## The loop
 
-1. Run the GitHub search queries above; read 5-10 new candidate repos.
-2. For each genuine match, send one outreach message (issue comment, PR
-   comment if there's an open relevant one, or a direct message if the
-   platform and etiquette allow it).
-3. Log every contact in `docs/USER_VALIDATION.md`'s tracking table (see
-   that doc) — target, channel, date, response, outcome.
-4. Repeat weekly until the targets in `USER_VALIDATION.md` are hit.
+A manual process, seven steps, none of them automated:
 
-No spamming, no mass-DMing, no automated messages. This is a slow,
-manual, honest channel by design — the goal is 10 real users, not 10
-impressions.
+1. **Find a project with custom context trimming.** Run the GitHub
+   search queries above; read 5-10 new candidate repos.
+2. **Understand what problem they're actually solving** before
+   reaching out — read the surrounding code, not just the one
+   `shift()`/`slice()` line. What breaks for them today, specifically?
+3. **Open an issue/discussion only when it's genuinely relevant** —
+   their repo has the exact shape this library addresses, not "any repo
+   that touches LLMs." When in doubt, don't.
+4. **Politely introduce token-budget**, referencing their actual code
+   (the outreach template above is a starting point, not a script).
+5. **Ask for feedback, not a star.** The message explicitly invites
+   "even if the answer is no, I'd rather know what's missing" — a star
+   or a download tells you nothing about whether it actually solved
+   their problem; a real answer does.
+6. **Never spam.** One message, no follow-up ping if they don't
+   respond. A second unsolicited message is the line between outreach
+   and spam.
+7. **Record the feedback**, not just that contact happened — use
+   [`docs/USER_FEEDBACK_TEMPLATE.md`](./USER_FEEDBACK_TEMPLATE.md) for
+   any real response, and log every contact (response or not) in
+   `docs/USER_VALIDATION.md`'s tracking table: target, channel, date,
+   response, outcome.
+
+Repeat weekly until the targets in `USER_VALIDATION.md` are hit. No
+spamming, no mass-DMing, no automated messages, no scraping. This is a
+slow, manual, honest channel by design — the goal is 10 real users, not
+10 impressions.

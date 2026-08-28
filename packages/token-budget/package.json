@@ -1,7 +1,7 @@
 {
   "name": "@shivam.dixit/token-budget",
   "version": "0.1.3",
-  "description": "Keep multi-turn LLM conversations inside the context window: pluggable eviction/summarization strategies, cost accounting, and an explain() trace, for any model or framework.",
+  "description": "Keep long-running AI agents — coding agents, autonomous agents, tool-calling loops — inside their context window: pluggable eviction/summarization strategies, atomic tool-call preservation, cost accounting, and an explain() trace, for any model or framework.",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/shivam039/token-budget.git",
@@ -50,7 +50,13 @@
     "token-counting",
     "context-window",
     "context-management",
+    "context-eviction",
+    "context-trimming",
     "compaction",
+    "conversation-history",
+    "tool-calls",
+    "coding-agents",
+    "autonomous-agents",
     "openai",
     "anthropic",
     "langchain",

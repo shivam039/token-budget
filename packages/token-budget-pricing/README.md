@@ -53,6 +53,16 @@ A snapshot of OpenAI, Anthropic, and Google model pricing — see
 by `CostModel.costPerToken()` for interface compatibility but isn't used
 here — this model is priced per-model/per-direction, not per-role.
 
+## The wider project
+
+Part of the [`token-budget`](https://github.com/shivam039/token-budget)
+monorepo — the core package, the other framework/tokenizer adapters,
+benchmarks, and the flagship
+[coding-agent example](https://github.com/shivam039/token-budget/tree/main/examples/coding-agent-context)
+all live there. See the
+[compatibility matrix](https://github.com/shivam039/token-budget/blob/main/COMPATIBILITY.md)
+for exactly what every adapter is tested against.
+
 ## License
 
 MIT

@@ -95,6 +95,16 @@ requires.
 See [`CHANGELOG.md`](./CHANGELOG.md) for how this approximation gets
 revisited if Anthropic ever publishes tokenizer details (FR2-2.2.2).
 
+## The wider project
+
+Part of the [`token-budget`](https://github.com/shivam039/token-budget)
+monorepo — the core package, the other framework/tokenizer adapters,
+benchmarks, and the flagship
+[coding-agent example](https://github.com/shivam039/token-budget/tree/main/examples/coding-agent-context)
+all live there. See the
+[compatibility matrix](https://github.com/shivam039/token-budget/blob/main/COMPATIBILITY.md)
+for exactly what every adapter is tested against.
+
 ## License
 
 MIT

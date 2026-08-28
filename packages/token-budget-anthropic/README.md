@@ -89,6 +89,16 @@ from `token-budget/test-utils` (round-trip fidelity, tool-call atomicity,
 pinned-message handling, token accounting) plus a full round-trip
 integration test against a live-shaped response fixture.
 
+## The wider project
+
+Part of the [`token-budget`](https://github.com/shivam039/token-budget)
+monorepo — the core package, the other framework/tokenizer adapters,
+benchmarks, and the flagship
+[coding-agent example](https://github.com/shivam039/token-budget/tree/main/examples/coding-agent-context)
+all live there. See the
+[compatibility matrix](https://github.com/shivam039/token-budget/blob/main/COMPATIBILITY.md)
+for exactly what every adapter is tested against.
+
 ## License
 
 MIT
