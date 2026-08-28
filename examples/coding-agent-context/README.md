@@ -6,7 +6,8 @@ is the product demo: a ~20-message session shaped like a real coding
 agent actually produces it — a pinned system prompt, a dead-end file
 read, verbose terminal/test output, a stack trace, old turns and recent
 ones — that grows past a realistic 700-token budget, and exactly what
-`token-budget` does about it.
+`token-budget` does about it. For the broader problem this solves, see
+[`docs/guides/ai-agent-context-management.md`](../../docs/guides/ai-agent-context-management.md).
 
 ## Run it
 

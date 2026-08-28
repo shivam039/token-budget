@@ -7,31 +7,45 @@
 [![License: MIT](https://img.shields.io/github/license/shivam039/token-budget)](./LICENSE)
 [![Node >= 18](https://img.shields.io/badge/node-%3E%3D18-339933)](./packages/token-budget/package.json)
 
-A coding agent, an autonomous agent, or anything with a tool-calling loop
-accumulates conversation history, tool calls, tool results, terminal
-output, file contents, and retrieved documents — and eventually the
-context window becomes too small to hold all of it. Then you get a hard
-400 from the provider, or a summarization job bolted on after the fact
-that quietly drops your system prompt or splits a tool-call from its
-result. **token-budget keeps that context inside its token budget
-automatically**, with a strategy you choose (drop oldest, sliding
-window, priority, summarize, or your own), atomic tool-call/tool-result
-pairing so a provider never rejects an orphaned result, and tells you
-exactly what it did and why via `explain()`.
+**What does token-budget solve?** A coding agent, an autonomous agent,
+or anything with a tool-calling loop accumulates conversation history,
+tool calls, tool results, terminal output, file contents, and retrieved
+documents — and eventually the context window becomes too small to hold
+all of it. Then you get a hard 400 from the provider, or a
+summarization job bolted on after the fact that quietly drops your
+system prompt or splits a tool-call from its result. token-budget
+manages the context sent to an LLM as a long-running agent approaches
+its context-window limit: it can enforce a token budget, evict
+lower-priority context, preserve pinned instructions, keep tool-call/
+tool-result pairs atomic, truncate oversized tool outputs, compact or
+summarize context where you configure it to, and explain every decision
+it made — automatically, on every call.
 
-**Who this is for:** anyone building a coding agent, an autonomous
-agent, or any tool-calling loop in TypeScript/JavaScript whose
-conversation history outgrows a fixed token budget — whether you're
-calling a provider SDK directly, or going through LangChain.js or the
-Vercel AI SDK.
+**Who is it for?** Anyone building, in TypeScript/JavaScript:
 
-It's context-management infrastructure, not a tokenizer and not an
-agent framework: it doesn't count tokens itself for a specific model
-(bring your own tokenizer, or use the built-in estimator), it doesn't
-orchestrate tool calls or agent loops, and it doesn't call a model API
-(except through a `summarize` callback you supply). It's the
-buffer-management layer underneath whatever you're already using — raw
-provider SDKs, Vercel AI SDK, or LangChain.js.
+- coding agents
+- autonomous agents
+- tool-calling agents
+- research agents
+- any other long-running LLM application whose conversation history
+  outgrows a fixed token budget
+
+— whether you're calling a provider SDK directly, or going through
+LangChain.js or the Vercel AI SDK.
+
+**Is token-budget a tokenizer?** No. A tokenizer answers "how many
+tokens is this text?" token-budget answers "given a growing buffer and
+a hard limit, what context should remain?" You need a tokenizer either
+way — bring your own, or use the zero-dependency built-in estimator —
+but counting tokens doesn't decide what to evict, how to keep a
+tool-call paired with its result, or how to explain the decision
+afterward. More in the [FAQ](./docs/FAQ.md#is-token-budget-a-tokenizer).
+
+**Is token-budget an agent framework?** No. It doesn't orchestrate tool
+calls, plan multi-step loops, or call a model API itself (except
+through a `summarize` callback you supply). It's the context-management
+layer underneath whatever's already orchestrating your agent — a raw
+provider SDK, LangChain.js, or the Vercel AI SDK.
 
 ```sh
 npm install @shivam.dixit/token-budget
@@ -326,8 +340,11 @@ each package's own README for its API, usage, and known limitations.
 
 ## Docs
 
+- [`docs/FAQ.md`](./docs/FAQ.md) — direct answers to the questions you'd actually search: what a context window is, how to trim history, how to preserve tool calls, which integrations exist.
+- [`docs/guides/ai-agent-context-management.md`](./docs/guides/ai-agent-context-management.md) — the full shape of the context-management problem for long-running agents, and how each piece of token-budget addresses it.
+- [`docs/guides/tool-output-context-management.md`](./docs/guides/tool-output-context-management.md) — preventing one oversized tool result from consuming the whole budget.
 - [`docs/benchmarks.md`](./docs/benchmarks.md) — reproducible performance numbers (`npm run bench`), including where token-budget loses.
-- [`docs/comparisons.md`](./docs/comparisons.md) — token-budget vs. DIY, `gpt-tokenizer`, LangChain, and provider-native truncation.
+- [`docs/comparisons.md`](./docs/comparisons.md) — token-budget vs. DIY, `gpt-tokenizer`, LangChain, and provider-native truncation, plus dedicated deep dives for [gpt-tokenizer](./docs/comparisons/token-budget-vs-gpt-tokenizer.md) and [LangChain](./docs/comparisons/token-budget-vs-langchain.md).
 - [`COMPATIBILITY.md`](./COMPATIBILITY.md) — what each adapter/tokenizer package is tested against, and why they use structural typing instead of a real SDK dependency.
 
 ## Development

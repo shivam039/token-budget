@@ -43,7 +43,9 @@
     "tokens",
     "claude",
     "anthropic",
-    "token-budget"
+    "token-budget",
+    "token-counting",
+    "claude-tokenizer"
   ],
   "license": "MIT",
   "dependencies": {

@@ -42,7 +42,9 @@
     "tokens",
     "pricing",
     "cost",
-    "token-budget"
+    "token-budget",
+    "cost-tracking",
+    "usage-tracking"
   ],
   "license": "MIT",
   "peerDependencies": {

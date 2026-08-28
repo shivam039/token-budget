@@ -1,0 +1,45 @@
+# token-budget
+
+> Context-management infrastructure for long-running AI agents: keeps
+> a growing conversation (messages, tool calls, tool results) inside a
+> token budget via pluggable eviction/summarization strategies, atomic
+> tool-call/tool-result preservation, pinned instructions, oversized
+> tool-output truncation, and an explainable decision trace. Not a
+> tokenizer, not an agent framework — a layer underneath whatever's
+> already orchestrating your agent (a raw provider SDK, LangChain.js,
+> or the Vercel AI SDK).
+
+This file is a navigation pointer to the canonical documentation below,
+nothing more — it makes no claims about search ranking or AI citation.
+
+## Start here
+
+- [README](https://github.com/shivam039/token-budget/blob/main/README.md) — positioning, install, the smallest example, the `getContext()`/`commit()` lifecycle
+- [FAQ](https://github.com/shivam039/token-budget/blob/main/docs/FAQ.md) — direct answers: what a context window is, how to trim history, how to preserve tool calls, which integrations exist
+- [AI agent context management guide](https://github.com/shivam039/token-budget/blob/main/docs/guides/ai-agent-context-management.md) — the full shape of the problem and how each piece is addressed
+- [Tool-output context management guide](https://github.com/shivam039/token-budget/blob/main/docs/guides/tool-output-context-management.md) — preventing one oversized tool result from consuming the budget
+
+## Try it
+
+- [Coding-agent example](https://github.com/shivam039/token-budget/tree/main/examples/coding-agent-context) — realistic, deterministic, runnable in under a minute, no API key required
+- [Cookbook](https://github.com/shivam039/token-budget/blob/main/packages/token-budget/COOKBOOK.md) — four tested recipes (customer support, coding agent, RAG chat, long-form writing)
+
+## Comparisons and benchmarks (honest, methodology included)
+
+- [Comparisons overview](https://github.com/shivam039/token-budget/blob/main/docs/comparisons.md) — vs. DIY trimming, gpt-tokenizer, LangChain, provider-native truncation
+- [vs. gpt-tokenizer](https://github.com/shivam039/token-budget/blob/main/docs/comparisons/token-budget-vs-gpt-tokenizer.md)
+- [vs. LangChain](https://github.com/shivam039/token-budget/blob/main/docs/comparisons/token-budget-vs-langchain.md)
+- [Benchmarks](https://github.com/shivam039/token-budget/blob/main/docs/benchmarks.md) — reproducible, includes where token-budget loses
+
+## Packages
+
+- [token-budget](https://www.npmjs.com/package/@shivam.dixit/token-budget) (core)
+- [token-budget-openai](https://www.npmjs.com/package/@shivam.dixit/token-budget-openai)
+- [token-budget-anthropic](https://www.npmjs.com/package/@shivam.dixit/token-budget-anthropic)
+- [token-budget-vercel-ai](https://www.npmjs.com/package/@shivam.dixit/token-budget-vercel-ai)
+- [token-budget-langchain](https://www.npmjs.com/package/@shivam.dixit/token-budget-langchain)
+- [token-budget-tiktoken](https://www.npmjs.com/package/@shivam.dixit/token-budget-tiktoken)
+- [token-budget-claude](https://www.npmjs.com/package/@shivam.dixit/token-budget-claude)
+- [token-budget-pricing](https://www.npmjs.com/package/@shivam.dixit/token-budget-pricing)
+- [token-budget-otel](https://www.npmjs.com/package/@shivam.dixit/token-budget-otel)
+- [token-budget-embeddings](https://www.npmjs.com/package/@shivam.dixit/token-budget-embeddings)

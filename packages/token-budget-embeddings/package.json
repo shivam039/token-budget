@@ -42,7 +42,9 @@
     "tokens",
     "embeddings",
     "semantic-search",
-    "token-budget"
+    "token-budget",
+    "semantic-relevance",
+    "rag"
   ],
   "license": "MIT",
   "peerDependencies": {

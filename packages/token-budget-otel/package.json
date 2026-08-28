@@ -43,7 +43,9 @@
     "opentelemetry",
     "otel",
     "observability",
-    "token-budget"
+    "token-budget",
+    "tracing",
+    "context-management"
   ],
   "license": "MIT",
   "peerDependencies": {

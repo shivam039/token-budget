@@ -47,7 +47,10 @@
     "tokens",
     "tiktoken",
     "openai",
-    "token-budget"
+    "token-budget",
+    "token-counting",
+    "cl100k_base",
+    "o200k_base"
   ],
   "license": "MIT",
   "dependencies": {

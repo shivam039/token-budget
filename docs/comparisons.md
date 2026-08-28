@@ -63,6 +63,9 @@ counting speed matters more to you than `js-tiktoken` compatibility —
 anything with a `count(text): number` method works as the `tokenizer`
 option. They're complementary, not competing.
 
+Dedicated deep dive, with the full benchmark tables and an FAQ:
+[`comparisons/token-budget-vs-gpt-tokenizer.md`](./comparisons/token-budget-vs-gpt-tokenizer.md).
+
 ## token-budget vs. LangChain's `trim_messages` / `SummarizationMiddleware`
 
 If you're already all-in on LangChain.js, `trim_messages` covers basic
@@ -94,6 +97,9 @@ realistic, favorable shape rather than a worst case. We don't think
 that's "LangChain is bad at this" so much as `trim_messages` not being
 built for repeated, large-scale eviction against a big history — which is
 exactly the scenario `token-budget` is for.
+
+Dedicated deep dive, with the exact tested workload spelled out and an
+FAQ: [`comparisons/token-budget-vs-langchain.md`](./comparisons/token-budget-vs-langchain.md).
 
 ## token-budget vs. provider-native truncation (e.g. OpenAI's `truncation_strategy`)
 

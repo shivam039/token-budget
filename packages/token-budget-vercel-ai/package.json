@@ -1,7 +1,7 @@
 {
   "name": "@shivam.dixit/token-budget-vercel-ai",
   "version": "0.1.3",
-  "description": "Vercel AI SDK adapter for token-budget: CoreMessage[] conversion, streaming integration, and an optional React hook.",
+  "description": "Vercel AI SDK adapter for token-budget: CoreMessage[] conversion, streaming integration, and an optional React hook — context window and token budget management for Vercel AI SDK agents.",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/shivam039/token-budget.git",
@@ -47,7 +47,10 @@
     "tokens",
     "vercel",
     "ai-sdk",
-    "token-budget"
+    "token-budget",
+    "context-window",
+    "context-management",
+    "vercel-ai-agents"
   ],
   "license": "MIT",
   "peerDependencies": {
