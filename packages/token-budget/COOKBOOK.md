@@ -103,7 +103,8 @@ content-prep step, so it composes with whichever strategy you're already
 using rather than replacing any part of it. Use `keep: 'start'` for a
 log whose relevant part is up front, or `keep: 'both'` (e.g. a file
 read, where the imports *and* the tail both matter) to keep a head and a
-tail with the middle cut.
+tail with the middle cut. Full guide:
+[`docs/guides/tool-output-context-management.md`](../../docs/guides/tool-output-context-management.md).
 
 ## RAG chat
 

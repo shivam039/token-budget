@@ -1,7 +1,7 @@
 {
   "name": "@shivam.dixit/token-budget-openai",
-  "version": "0.1.3",
-  "description": "OpenAI Chat Completions API adapter for token-budget.",
+  "version": "0.1.4",
+  "description": "OpenAI Chat Completions API adapter for token-budget — context window and token budget management for OpenAI agents.",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/shivam039/token-budget.git",
@@ -42,7 +42,10 @@
     "tokens",
     "openai",
     "gpt",
-    "token-budget"
+    "token-budget",
+    "context-window",
+    "context-management",
+    "openai-agents"
   ],
   "license": "MIT",
   "peerDependencies": {

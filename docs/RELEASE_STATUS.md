@@ -5,36 +5,40 @@ vs. npm, as of this audit. Regenerate this table (don't hand-edit stale
 numbers) whenever a version changes — see the verification commands at
 the bottom.
 
-**HEAD**: `main` @ the release/discoverability pass, version-bumped to
-carry it to npm (`token-budget` 0.1.3 → 0.1.4, all 9 adapters 0.1.2 →
-0.1.3 — patch bumps, docs/metadata only, no API or behavior change).
-Full monorepo `build && typecheck && test` clean: 378 tests, 0 failures.
+**HEAD**: `main` @ the SEO/AEO pass, version-bumped to carry the
+adapter keyword/description changes to npm (9 adapters 0.1.3 → 0.1.4 —
+patch bumps, metadata only, no API or behavior change). `token-budget`
+core stays at 0.1.4 — nothing in its published tarball (`dist/` +
+`packages/token-budget/README.md`) changed this pass, only the root
+README, `docs/`, and adapter `package.json` files, none of which core
+ships. Full monorepo `build && typecheck && test` clean: 378 tests, 0
+failures.
 
 | Package | GitHub version | npm version (at last check) | Ready? | Action |
 | --- | --- | --- | --- | --- |
-| `token-budget` | 0.1.4 | 0.1.3 | ✅ | Publish 0.1.4 via the Trusted Publisher pipeline. |
-| `token-budget-anthropic` | 0.1.3 | 0.1.2 | ✅ | Publish 0.1.3. |
-| `token-budget-openai` | 0.1.3 | 0.1.2 | ✅ | Publish 0.1.3. |
-| `token-budget-vercel-ai` | 0.1.3 | 0.1.2 | ✅ | Publish 0.1.3. |
-| `token-budget-tiktoken` | 0.1.3 | 0.1.2 | ✅ | Publish 0.1.3. |
-| `token-budget-langchain` | 0.1.3 | 0.1.2 | ✅ | Publish 0.1.3. |
-| `token-budget-claude` | 0.1.3 | 0.1.2 | ✅ | Publish 0.1.3. |
-| `token-budget-pricing` | 0.1.3 | 0.1.2 | ✅ | Publish 0.1.3. |
-| `token-budget-otel` | 0.1.3 | 0.1.2 | ✅ | Publish 0.1.3. |
-| `token-budget-embeddings` | 0.1.3 | 0.1.2 | ✅ | Publish 0.1.3. |
+| `token-budget` | 0.1.4 | 0.1.4 | ✅ | None — already in sync, nothing to republish. |
+| `token-budget-anthropic` | 0.1.4 | 0.1.3 | ✅ | Publish 0.1.4 (new keywords/description). |
+| `token-budget-openai` | 0.1.4 | 0.1.3 | ✅ | Publish 0.1.4. |
+| `token-budget-vercel-ai` | 0.1.4 | 0.1.3 | ✅ | Publish 0.1.4. |
+| `token-budget-tiktoken` | 0.1.4 | 0.1.3 | ✅ | Publish 0.1.4. |
+| `token-budget-langchain` | 0.1.4 | 0.1.3 | ✅ | Publish 0.1.4. |
+| `token-budget-claude` | 0.1.4 | 0.1.3 | ✅ | Publish 0.1.4. |
+| `token-budget-pricing` | 0.1.4 | 0.1.3 | ✅ | Publish 0.1.4. |
+| `token-budget-otel` | 0.1.4 | 0.1.3 | ✅ | Publish 0.1.4. |
+| `token-budget-embeddings` | 0.1.4 | 0.1.3 | ✅ | Publish 0.1.4. |
 | `token-budget-devtools` | 0.1.0 | *(not published, `private: true`)* | N/A | Intentionally unpublished. No action. |
 | `token-budget-py` | 0.1.0 | *(not on PyPI)* | N/A | Deliberately unpublished per `docs/PYTHON_ROADMAP.md`. No action. |
 
-## Why every package bumped together
+## Why only the adapters bumped this time
 
-The only thing that changed was documentation (a "wider project" link
-in all 9 adapter READMEs, the root README's install-experience diagram,
-`token-budget`'s description/keywords) — no source, no behavior, no
-dependency change anywhere. Bumping every package in lockstep for a
-docs-only change is simpler to reason about and verify than bumping
-some and not others; the alternative (independent per-package
-versioning here) would save nothing real, since all 10 READMEs changed
-together in the same PR.
+This pass's `package.json` changes were scoped to the 9 adapters
+(ecosystem-specific keywords and descriptions — see
+`docs/SEO_AEO_AUDIT.md`). `token-budget` core's `package.json` and its
+own `README.md` weren't touched; the root `README.md`, `docs/`
+additions, and `COOKBOOK.md` aren't part of any published tarball
+(`files` on core is `["dist", "README.md"]`, referring to the
+package's own README, not the repo root's). Bumping core for a change
+it doesn't actually ship would be a no-op publish — skipped.
 
 ## How this table was verified (not assumed)
 
