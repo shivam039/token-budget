@@ -61,6 +61,62 @@ gives you the full reasoning trail. `pinned: true` means the system
 prompt survives every eviction strategy, and tool-call/tool-result pairs
 are always kept or dropped together — no dangling tool results.
 
+That call does this, every time:
+
+```
+messages
+  │
+  ▼
+TokenBudget  (your maxTokens/reserve + a strategy: drop-oldest,
+  │           sliding-window, priority, summarize, or your own)
+  ▼
+context management  (evict / summarize / prioritize down to budget)
+  │
+  ▼
+managed messages  (fits maxTokens - reserve, guaranteed)
+  │
+  ▼
+send to your model's chat-completion API
+```
+
+## The lifecycle: `addMessage()` → `getContext()` → send → `commit()`
+
+The one thing worth understanding before you use this in a real loop —
+`getContext()` and `commit()` are two separate steps on purpose:
+
+```
+addMessage() / editMessage() / removeMessage()
+    │
+    ▼
+getContext() / getContextSync()
+    │
+    ├─ derives a budgeted view from the full stored history
+    └─ does NOT modify the buffer — call it as often as you like, read-only
+    │
+    ▼
+send ctx.messages to your provider
+    │
+    ▼
+commit(ctx.messages)          ← optional, but usually what you want next turn
+    │
+    └─ makes that view the new buffer — required for an eviction or a
+       summary to "stick" and be seen on the next turn
+```
+
+`getContext()` is a pure read: it recomputes from the complete history
+every time, so nothing is lost by calling it repeatedly — you can call it
+speculatively (e.g. to show a "context usage" indicator) without
+affecting what a real turn later evicts. They're separate calls
+specifically so that "preview what would be sent" and "actually commit
+to having evicted this" are two different, deliberate decisions instead
+of one call silently doing both. If you want an eviction (or a
+`summarizeOldest` summary) to actually replace what's stored — so a
+later turn re-evaluates from the compacted state instead of the full
+original history — call `budget.commit(ctx.messages)` after sending.
+Skip `commit()` and the next `getContext()` call just re-derives from
+the same full history again, which is fine for a stateless "check
+current usage" call but means an eviction never sticks across turns.
+
 ## Why not just use a tokenizer?
 
 A tokenizer answers "how many tokens is this text" — a
@@ -213,26 +269,6 @@ See [`examples/coding-agent-context`](./examples/coding-agent-context) for
 all of this against a realistic session, printed as a readable report
 rather than raw JSON.
 
-## `getContext()` vs `commit()`
-
-```
-getContext() / getContextSync()
-    │
-    ├─ derives a budgeted view from the full stored history
-    └─ does NOT modify the buffer — call it as often as you like, read-only
-
-commit(ctx.messages)
-    │
-    └─ makes that view the new buffer — required for an eviction or a
-       summary to "stick" and be seen on the next turn
-```
-
-`getContext()` is a pure read: it recomputes from the complete history
-every time, so nothing is lost by calling it repeatedly. If you want an
-eviction (or a `summarizeOldest` summary) to actually replace what's
-stored — so a later turn re-evaluates from the compacted state instead of
-the full original history — call `budget.commit(ctx.messages)` after it.
-
 ## Token counting modes
 
 | Mode | Config | Trade-off |
@@ -324,7 +360,8 @@ is:
 - [`docs/PRODUCT_AUDIT.md`](./docs/PRODUCT_AUDIT.md) — what exists today, what's production-ready, what's intentionally not built yet.
 - [`docs/DO_NOT_BUILD_YET.md`](./docs/DO_NOT_BUILD_YET.md) — the explicit scope-creep guard (no MCP server, no VS Code extension, no Python rewrite, etc. — and why).
 - [`docs/MCP.md`](./docs/MCP.md) and [`docs/PYTHON_ROADMAP.md`](./docs/PYTHON_ROADMAP.md) — two specific deferred-until-evidence decisions, reasoned through.
-- [`docs/FIRST_USERS.md`](./docs/FIRST_USERS.md) and [`docs/USER_VALIDATION.md`](./docs/USER_VALIDATION.md) — how this project finds and tracks its first real users.
+- [`docs/FIRST_USERS.md`](./docs/FIRST_USERS.md), [`docs/USER_VALIDATION.md`](./docs/USER_VALIDATION.md), and [`docs/USER_FEEDBACK_TEMPLATE.md`](./docs/USER_FEEDBACK_TEMPLATE.md) — how this project finds its first real users, tracks the funnel, and turns a conversation into a product decision.
+- [`docs/RELEASE_STATUS.md`](./docs/RELEASE_STATUS.md) — exact GitHub-vs-npm version state for every publishable package, regenerated (not hand-typed) on every audit.
 
 ## Status
 
