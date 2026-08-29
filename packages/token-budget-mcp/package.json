@@ -16,7 +16,7 @@
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "bin": {
-    "token-budget-mcp": "./dist/cli.js"
+    "token-budget-mcp": "dist/cli.js"
   },
   "exports": {
     ".": {
