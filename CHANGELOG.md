@@ -6,6 +6,23 @@ how the project got here — useful for understanding *why* something is
 shaped the way it is, not for deciding whether to install it today (see
 the root [`README.md`](./README.md) for that).
 
+## Model-aware `maxTokens`
+
+`maxTokens` is now optional: set `model` to a name listed in the new
+`MODEL_CONTEXT_WINDOWS` export instead, and its known context-window size
+is used automatically (`new TokenBudget({ model: 'gpt-4o' })` →
+`maxTokens` 128000). An explicit `maxTokens` always wins if set; omitting
+both, or naming an unrecognized model, still throws — an unresolved
+budget is never silently guessed. `model` already existed as the name
+passed to `costModel.costPerToken()` for cost accounting; it now serves
+both purposes from the same field. `token-budget-vercel-ai`'s
+`useTokenBudget()`/`computeBudgetSnapshot()` picked up `model` too, and
+its internal `effectiveBudget` calculation now reads it off the
+constructed `TokenBudget` instance instead of recomputing it from
+`config.maxTokens` directly (which could no longer assume that field was
+set). No breaking changes — every existing explicit-`maxTokens` call
+site is unaffected. Full monorepo build/typecheck/test verified clean.
+
 ## Release-hardening pass
 
 Not a feature sprint — cleanup ahead of real user validation. Fixed a

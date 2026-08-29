@@ -1,4 +1,5 @@
 import { Emitter } from './emitter.js';
+import { getModelContextWindow } from './modelContextWindows.js';
 import { dropOldest } from './strategies/dropOldest.js';
 import {
   countMessageTokens,
@@ -132,17 +133,42 @@ export class TokenBudget {
   private auditLog: boolean;
   private onAuditEventHook?: (event: AuditEvent) => void | Promise<void>;
 
+  /**
+   * `config.maxTokens` as given, or — if omitted — derived from
+   * `config.model` via `MODEL_CONTEXT_WINDOWS`. Throws a descriptive error
+   * rather than falling back to some arbitrary number: an unrecognized
+   * budget should never be silently guessed.
+   */
+  private static resolveMaxTokens(config: TokenBudgetConfig): number {
+    if (config.maxTokens !== undefined) return config.maxTokens;
+    if (!config.model) {
+      throw new Error(
+        'TokenBudget: config.maxTokens is required unless config.model names a recognized model ' +
+          '(see MODEL_CONTEXT_WINDOWS). Pass maxTokens explicitly, or set model to a listed name.',
+      );
+    }
+    const known = getModelContextWindow(config.model);
+    if (known === undefined) {
+      throw new Error(
+        `TokenBudget: config.maxTokens was omitted and config.model ("${config.model}") is not in ` +
+          'MODEL_CONTEXT_WINDOWS. Pass maxTokens explicitly, or use a listed model name.',
+      );
+    }
+    return known;
+  }
+
   constructor(config: TokenBudgetConfig) {
-    if (typeof config.maxTokens !== 'number' || !Number.isFinite(config.maxTokens) || config.maxTokens <= 0) {
+    const maxTokens = TokenBudget.resolveMaxTokens(config);
+    if (typeof maxTokens !== 'number' || !Number.isFinite(maxTokens) || maxTokens <= 0) {
       throw new Error('TokenBudget: config.maxTokens must be a positive finite number.');
     }
     const reserve = config.reserve ?? 0;
     if (typeof reserve !== 'number' || !Number.isFinite(reserve) || reserve < 0) {
       throw new Error('TokenBudget: config.reserve must be a non-negative finite number.');
     }
-    if (reserve >= config.maxTokens) {
+    if (reserve >= maxTokens) {
       throw new Error(
-        `TokenBudget: config.reserve (${reserve}) must be less than config.maxTokens (${config.maxTokens}).`,
+        `TokenBudget: config.reserve (${reserve}) must be less than config.maxTokens (${maxTokens}).`,
       );
     }
     const warningThreshold = config.warningThreshold ?? 0.8;
@@ -150,7 +176,7 @@ export class TokenBudget {
       throw new Error('TokenBudget: config.warningThreshold must be a number between 0 and 1.');
     }
 
-    this.maxTokensValue = config.maxTokens;
+    this.maxTokensValue = maxTokens;
     this.reserveValue = reserve;
     this.warningThreshold = warningThreshold;
     this.strategy = config.strategy ?? dropOldest();

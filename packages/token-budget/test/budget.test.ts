@@ -26,6 +26,30 @@ describe('TokenBudget config validation', () => {
   });
 });
 
+describe('TokenBudget model-aware maxTokens', () => {
+  it('derives maxTokens from a recognized model when maxTokens is omitted', () => {
+    const budget = new TokenBudget({ model: 'gpt-4o' });
+    expect(budget.maxTokens).toBe(128_000);
+  });
+
+  it('an explicit maxTokens always wins over the model-derived value', () => {
+    const budget = new TokenBudget({ model: 'gpt-4o', maxTokens: 5000 });
+    expect(budget.maxTokens).toBe(5000);
+  });
+
+  it('throws with a clear message if maxTokens is omitted and model is unrecognized', () => {
+    expect(() => new TokenBudget({ model: 'not-a-real-model' })).toThrow(/not in MODEL_CONTEXT_WINDOWS/);
+  });
+
+  it('throws with a clear message if both maxTokens and model are omitted', () => {
+    expect(() => new TokenBudget({})).toThrow(/config\.maxTokens is required/);
+  });
+
+  it('reserve is still validated against the model-derived maxTokens', () => {
+    expect(() => new TokenBudget({ model: 'gpt-4o', reserve: 200_000 })).toThrow(/reserve/);
+  });
+});
+
 describe('TokenBudget buffer management', () => {
   it('addMessage returns a message with an id, timestamp, and cached tokens', () => {
     const budget = new TokenBudget({ maxTokens: 1000 });

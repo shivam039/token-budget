@@ -56,6 +56,20 @@ model's own reply. See the [root README](../README.md#the-smallest-useful-exampl
 for the full walkthrough, including the `getContext()`/`commit()`
 lifecycle.
 
+## Do I have to know a model's context window myself?
+
+No, not for a recognized model. Set `model` instead of `maxTokens` and
+its known context-window size is looked up automatically:
+
+```ts
+const budget = new TokenBudget({ model: 'gpt-4o', reserve: 4096 });
+budget.maxTokens; // 128000
+```
+
+See the `MODEL_CONTEXT_WINDOWS` export for the full list of recognized
+names. Set `maxTokens` explicitly for anything not listed, or to
+override the looked-up value — it always wins if you set both.
+
 ## How do you preserve tool calls when trimming context?
 
 Give a tool-result message's `toolCallId` the `id` of the assistant

@@ -2,6 +2,11 @@ export { TokenBudget } from './budget.js';
 export * as strategies from './strategies/index.js';
 export { createEstimateTokenizer } from './tokenizer.js';
 
+// Known context-window sizes, keyed by model name — set `TokenBudget`'s
+// `model` and omit `maxTokens` to derive it from here automatically; see
+// the "Model-aware maxTokens" section in the README.
+export { MODEL_CONTEXT_WINDOWS, getModelContextWindow } from './modelContextWindows.js';
+
 // Building blocks for authoring custom strategies (see the "write your own
 // strategy" guide in the README): group messages into atomic eviction
 // units (respecting tool-call/tool-result pairing and pinning), then
