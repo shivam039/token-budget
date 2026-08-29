@@ -119,4 +119,43 @@ describe('token-budget-mcp server', () => {
     expect((result as any).isError).toBe(true);
     expect((result as any).content[0].text).toMatch(/slidingWindowTurns/);
   });
+
+  it('priority strategy actually applies through the protocol', async () => {
+    const created = parseResult((await client.callTool({ name: 'create_budget', arguments: { maxTokens: 30, strategy: 'priority' } })) as any);
+    await client.callTool({ name: 'add_message', arguments: { sessionId: created.sessionId, role: 'user', content: 'low priority filler text here', priority: 0 } });
+    await client.callTool({ name: 'add_message', arguments: { sessionId: created.sessionId, role: 'user', content: 'high priority filler text here', priority: 10 } });
+    const context = parseResult((await client.callTool({ name: 'get_context', arguments: { sessionId: created.sessionId } })) as any);
+    expect(context.strategyApplied).toBe('priority');
+  });
+
+  it('slidingWindow strategy actually applies through the protocol once slidingWindowTurns is set', async () => {
+    const created = parseResult(
+      (await client.callTool({ name: 'create_budget', arguments: { maxTokens: 1000, strategy: 'slidingWindow', slidingWindowTurns: 1 } })) as any,
+    );
+    await client.callTool({ name: 'add_message', arguments: { sessionId: created.sessionId, role: 'user', content: 'first' } });
+    await client.callTool({ name: 'add_message', arguments: { sessionId: created.sessionId, role: 'user', content: 'second' } });
+    const context = parseResult((await client.callTool({ name: 'get_context', arguments: { sessionId: created.sessionId } })) as any);
+    expect(context.strategyApplied).toBe('sliding-window');
+    expect(context.messages).toHaveLength(1);
+  });
+
+  it('add_message on an unknown session returns a clear error result, not a thrown exception', async () => {
+    const result = await client.callTool({ name: 'add_message', arguments: { sessionId: 'nonexistent', role: 'user', content: 'hi' } });
+    expect((result as any).isError).toBe(true);
+    expect((result as any).content[0].text).toMatch(/No session "nonexistent"/);
+  });
+
+  it('explain on an unknown session returns a clear error result', async () => {
+    const result = await client.callTool({ name: 'explain', arguments: { sessionId: 'nonexistent' } });
+    expect((result as any).isError).toBe(true);
+    expect((result as any).content[0].text).toMatch(/No session "nonexistent"/);
+  });
+
+  it('stats reports usage without applying the strategy', async () => {
+    const created = parseResult((await client.callTool({ name: 'create_budget', arguments: { maxTokens: 1000 } })) as any);
+    await client.callTool({ name: 'add_message', arguments: { sessionId: created.sessionId, role: 'user', content: 'hello' } });
+    const stats = parseResult((await client.callTool({ name: 'stats', arguments: { sessionId: created.sessionId } })) as any);
+    expect(stats.messageCount).toBe(1);
+    expect(stats.tokensUsed).toBeGreaterThan(0);
+  });
 });

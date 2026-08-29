@@ -203,9 +203,12 @@ export function createServer(): McpServer {
         const tokensBefore = tokenizer.count(text);
         const truncated = truncateToolOutput(text, maxTokens, tokenizer, keep ? { keep } : undefined);
         return textResult({ truncated, tokensBefore, tokensAfter: tokenizer.count(truncated) });
+        /* c8 ignore start -- truncateToolOutput() never throws for any input the zod inputSchema above
+           already guarantees (string text, positive-int maxTokens); kept for defense in depth only. */
       } catch (error) {
         return errorResult(error);
       }
+      /* c8 ignore stop */
     },
   );
 
