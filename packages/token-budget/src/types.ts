@@ -226,8 +226,13 @@ export interface SerializedState {
 }
 
 export interface TokenBudgetConfig {
-  /** Total context window size, in tokens. */
-  maxTokens: number;
+  /**
+   * Total context window size, in tokens. Optional if `model` is set to a
+   * name listed in `MODEL_CONTEXT_WINDOWS` — its known context-window size
+   * is used instead. Required (and throws if missing) when `model` is
+   * unset or unrecognized: an unknown budget is never silently guessed.
+   */
+  maxTokens?: number;
   /** Tokens reserved for the model's expected output. Default 0. */
   reserve?: number;
   /** A Tokenizer instance, or the string 'estimate' for the built-in heuristic. Default 'estimate'. */
@@ -279,7 +284,11 @@ export interface TokenBudgetConfig {
   persistDebounceMs?: number;
   /** Pluggable cost model for cost accounting (Phase 3). Ignored unless `model` is also set. */
   costModel?: CostModel;
-  /** The model name passed to `costModel.costPerToken()` for cost accounting. */
+  /**
+   * The model name passed to `costModel.costPerToken()` for cost accounting,
+   * and, when `maxTokens` is omitted, looked up in `MODEL_CONTEXT_WINDOWS`
+   * to auto-derive it. Serves both independently — set it for either or both.
+   */
   model?: string;
   /** Cumulative cost threshold that fires the `costWarning` event once. */
   costWarningThreshold?: number;

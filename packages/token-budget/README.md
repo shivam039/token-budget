@@ -61,7 +61,7 @@ const { messages, tokensUsed, tokensRemaining } = await budget.getContext();
 
 ```ts
 new TokenBudget({
-  maxTokens: 8000,        // required: total context window size
+  maxTokens: 8000,        // required unless `model` names a recognized model — see below
   reserve: 1000,          // optional, default 0: tokens reserved for output
   tokenizer: 'estimate',  // optional: 'estimate' (default) or a Tokenizer instance
   charsPerToken: 4,       // optional: tunes the 'estimate' tokenizer
@@ -74,6 +74,30 @@ new TokenBudget({
 
 Construction throws a descriptive error if `reserve >= maxTokens`, or if
 `warningThreshold` is outside `[0, 1]`.
+
+### Model-aware `maxTokens`
+
+`maxTokens` is optional if `model` names a model listed in
+`MODEL_CONTEXT_WINDOWS` — its known context-window size is used
+automatically:
+
+```ts
+import { TokenBudget, MODEL_CONTEXT_WINDOWS } from '@shivam.dixit/token-budget';
+
+const budget = new TokenBudget({ model: 'gpt-4o', reserve: 1000 });
+budget.maxTokens; // 128000 — looked up, not guessed
+
+console.log(MODEL_CONTEXT_WINDOWS); // every recognized model name
+```
+
+An explicit `maxTokens` always wins if you set both. If you set neither,
+or set `model` to a name that isn't listed, construction throws — an
+unrecognized budget is never silently guessed at. `MODEL_CONTEXT_WINDOWS`
+is a static, point-in-time table (same caveat as
+[`token-budget-pricing`](../token-budget-pricing)'s `PRICING_TABLE`: it
+will lag as providers add models or change limits), and `model` also
+still doubles as the model name passed to `costModel.costPerToken()` if
+you're using cost accounting — set it once, both features see it.
 
 ### Methods
 

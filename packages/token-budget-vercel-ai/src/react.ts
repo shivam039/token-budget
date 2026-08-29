@@ -7,7 +7,7 @@ export interface ChatMessageLike {
   content: string;
 }
 
-export type UseTokenBudgetConfig = Pick<TokenBudgetConfig, 'maxTokens' | 'reserve' | 'tokenizer' | 'charsPerToken' | 'warningThreshold'>;
+export type UseTokenBudgetConfig = Pick<TokenBudgetConfig, 'maxTokens' | 'reserve' | 'tokenizer' | 'charsPerToken' | 'warningThreshold' | 'model'>;
 
 export interface UseTokenBudgetResult {
   tokensUsed: number;
@@ -30,7 +30,7 @@ export function computeBudgetSnapshot(messages: ChatMessageLike[], config: UseTo
   }
   const stats = budget.stats();
   const threshold = config.warningThreshold ?? 0.8;
-  const effectiveBudget = config.maxTokens - (config.reserve ?? 0);
+  const effectiveBudget = budget.effectiveBudget;
   return {
     tokensUsed: stats.tokensUsed,
     tokensRemaining: stats.tokensRemaining,

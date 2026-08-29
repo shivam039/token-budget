@@ -37,4 +37,10 @@ describe('computeBudgetSnapshot', () => {
     // effectiveBudget = 90; ~89 tokens used (85 + 4 overhead) crosses 80% of 90
     expect(result.isNearLimit).toBe(true);
   });
+
+  it('derives the budget from model when maxTokens is omitted', () => {
+    const result = computeBudgetSnapshot([{ role: 'user', content: 'hi' }], { model: 'gpt-4o', charsPerToken: 1 });
+    // gpt-4o's known context window (128,000) minus what's actually used
+    expect(result.tokensRemaining).toBe(128_000 - result.tokensUsed);
+  });
 });

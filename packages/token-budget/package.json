@@ -1,6 +1,6 @@
 {
   "name": "@shivam.dixit/token-budget",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Keep long-running AI agents — coding agents, autonomous agents, tool-calling loops — inside their context window: pluggable eviction/summarization strategies, atomic tool-call preservation, cost accounting, and an explain() trace, for any model or framework.",
   "repository": {
     "type": "git",
