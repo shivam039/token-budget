@@ -6,6 +6,27 @@ how the project got here — useful for understanding *why* something is
 shaped the way it is, not for deciding whether to install it today (see
 the root [`README.md`](./README.md) for that).
 
+## `token-budget-mcp` hosted (Streamable HTTP) mode
+
+Added a second entry point (`dist/http-cli.js`, `npm start`) for running
+`token-budget-mcp` as a shared Streamable HTTP service instead of a local
+stdio process — for hosting it (e.g. on Render) so multiple people can
+connect to one URL instead of each running their own local instance.
+Requires `MCP_API_KEY` to start at all (no accidental unauthenticated
+deploys); every request needs it except `GET /healthz`. Per-connection
+limits (`MAX_CONNECTIONS`, `MAX_SESSIONS_PER_CONNECTION`,
+`MAX_MESSAGES_PER_SESSION`, `MAX_CONTENT_LENGTH`, all with defaults) cap
+one client's worst-case memory footprint — the stdio path sets none of
+these, unchanged, since a single local user needs no limits on their own
+process. Each MCP connection gets its own isolated `TokenBudget` session
+store (verified: two different clients cannot see or touch each other's
+sessions). Not deployable to Vercel-style serverless functions as-is —
+sessions live in memory for the process's lifetime, which needs a
+long-running process. Full real end-to-end test coverage: auth
+enforcement, connection-limit enforcement, session isolation, and a
+genuine `fetch`/MCP-`Client` round trip over real HTTP, not just
+in-process mocks.
+
 ## `token-budget-mcp`
 
 A new first-party package: an MCP (Model Context Protocol) server

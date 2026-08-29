@@ -11,7 +11,9 @@ export default defineConfig({
       // *built* dist/cli.js as a real subprocess — that's stronger proof
       // than source-level unit coverage, but V8 coverage can't attribute a
       // subprocess's execution back to this file's instrumented source.
-      exclude: ['src/cli.ts'],
+      // http-cli.ts is the same shape (a 3-line try/catch entry point around
+      // startHttpServer(), which test/http.test.ts exercises directly).
+      exclude: ['src/cli.ts', 'src/http-cli.ts'],
       thresholds: {
         lines: 90,
         statements: 90,

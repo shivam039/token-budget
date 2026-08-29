@@ -6,6 +6,18 @@ function generateSessionId(): string {
   return `session_${Date.now().toString(36)}_${Math.random().toString(36).slice(2)}`;
 }
 
+export interface SessionStoreOptions {
+  /**
+   * Caps concurrent sessions this store will hold; `create()` throws once
+   * full. Unset (default) is unlimited — correct for the stdio CLI, where
+   * one process serves one local user who can already see and manage
+   * their own sessions. The hosted HTTP server sets this per MCP
+   * connection, since it can't trust a remote caller not to leak sessions
+   * by simply forgetting to call `remove_session`.
+   */
+  maxSessions?: number;
+}
+
 /**
  * In-memory session store, keyed by a generated session id. Each MCP tool
  * call is stateless on its own (that's how MCP tools work); sessions are
@@ -19,8 +31,18 @@ function generateSessionId(): string {
  */
 export class SessionStore {
   private sessions = new Map<string, TokenBudget>();
+  private readonly maxSessions: number | undefined;
+
+  constructor(options: SessionStoreOptions = {}) {
+    this.maxSessions = options.maxSessions;
+  }
 
   create(budget: TokenBudget): string {
+    if (this.maxSessions !== undefined && this.sessions.size >= this.maxSessions) {
+      throw new Error(
+        `Session limit reached (${this.maxSessions}). Call remove_session to free one up before creating another.`,
+      );
+    }
     const id = generateSessionId();
     this.sessions.set(id, budget);
     return id;

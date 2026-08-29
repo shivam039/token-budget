@@ -89,6 +89,46 @@ The server speaks standard MCP over stdio — point any client's stdio
 transport at `npx @shivam.dixit/token-budget-mcp` (or a global install's
 `token-budget-mcp` binary directly).
 
+## Hosting it remotely (Streamable HTTP)
+
+Everything above runs the server as a local stdio process — the normal
+MCP shape, and the right default (no auth needed; the client that
+spawned it is implicitly the only caller). `dist/http-cli.js` is a
+second entry point for the less common case where you want one shared
+server multiple people connect to over a URL instead — e.g. deployed on
+[Render](https://render.com) as a persistent web service. (Not Vercel:
+sessions live in memory for the process's lifetime, which needs a
+long-running process, not serverless functions that may not reuse the
+same instance between requests.)
+
+```sh
+MCP_API_KEY=<a long random secret> npm start   # from packages/token-budget-mcp, after npm run build
+```
+
+Required: `MCP_API_KEY` — the server refuses to start without it rather
+than silently serving the internet with no auth. Every `/mcp` request
+needs `Authorization: Bearer <MCP_API_KEY>`; `GET /healthz` doesn't (for
+platform health checks).
+
+Optional env vars, all with sensible defaults, bounding one client's
+worst-case memory footprint on a shared server: `PORT` (3000),
+`MAX_CONNECTIONS` (20 concurrent MCP clients), `MAX_SESSIONS_PER_CONNECTION`
+(20 budget sessions each), `MAX_MESSAGES_PER_SESSION` (100),
+`MAX_CONTENT_LENGTH` (20,000 characters per message). The stdio path
+above never sets any of these — a single local user needs none of them.
+
+**Connecting a client to a hosted instance:**
+
+```sh
+# Claude Code — native remote-MCP support
+claude mcp add --transport http token-budget https://your-host/mcp \
+  --header "Authorization: Bearer <MCP_API_KEY>"
+
+# A stdio-only client (e.g. Claude Desktop, which doesn't speak
+# Streamable HTTP directly) — bridge with mcp-remote:
+npx mcp-remote https://your-host/mcp --header "Authorization: Bearer <MCP_API_KEY>"
+```
+
 ## Tools
 
 | Tool | Does |
