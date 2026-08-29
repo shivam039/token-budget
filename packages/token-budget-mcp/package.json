@@ -1,0 +1,70 @@
+{
+  "name": "@shivam.dixit/token-budget-mcp",
+  "version": "0.1.0",
+  "description": "MCP server exposing token-budget as callable tools (create a budget, add messages, get the strategized context, explain a decision, truncate a tool result) — for testing and driving the library interactively from Claude Code, Claude Desktop, or any other MCP client.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shivam039/token-budget.git",
+    "directory": "packages/token-budget-mcp"
+  },
+  "homepage": "https://github.com/shivam039/token-budget/tree/main/packages/token-budget-mcp#readme",
+  "bugs": {
+    "url": "https://github.com/shivam039/token-budget/issues"
+  },
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "token-budget-mcp": "./dist/cli.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "sideEffects": false,
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run build && npm run test"
+  },
+  "keywords": [
+    "llm",
+    "tokens",
+    "mcp",
+    "model-context-protocol",
+    "claude-code",
+    "claude-desktop",
+    "token-budget",
+    "context-management",
+    "ai-agents"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "zod": "^4.0.0"
+  },
+  "peerDependencies": {
+    "@shivam.dixit/token-budget": "^0.1.0"
+  },
+  "devDependencies": {
+    "@shivam.dixit/token-budget": "^0.1.0",
+    "@types/node": "^20.0.0",
+    "@vitest/coverage-v8": "^2.1.0",
+    "tsup": "^8.3.0",
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0"
+  }
+}

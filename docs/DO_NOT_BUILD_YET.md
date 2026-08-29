@@ -8,7 +8,7 @@ no matter how good an idea it seems in the abstract.
 
 | Item | Why deferred |
 | --- | --- |
-| **MCP server** | Wrong shape for this library — see `docs/MCP.md` for the full reasoning. The eventual opportunity (if any) is MCP client middleware, not a server, and even that needs a real MCP-using project to design against. |
+| **MCP client middleware** | Not the same thing as `token-budget-mcp` (built — see below). This is a different, still-unbuilt opportunity: an adapter that wraps an MCP *client's* tool-call responses, applying eviction/truncation to what comes back from MCP tools specifically. Needs a real MCP-using project to design against — see `docs/MCP.md`'s closing section. |
 | **VS Code extension** | No evidence of demand, and it's IDE tooling, not context management — doesn't advance the coding-agent-*library* use case this project is actually built for. |
 | **Vector database integration** | Out of category — see `docs/comparisons.md`'s taxonomy. Retrieval/embedding storage is a memory-system's job, not a context-budget-management job. `token-budget-embeddings` already provides the one integration point that's actually in scope: a pluggable `Scorer` for the `semanticRelevance` strategy, bring-your-own embeddings. |
 | **Full Python rewrite to parity** | P1, not P0 — see `docs/PYTHON_ROADMAP.md`. Acquiring the JS package's first real users matters more right now than doubling the surface area to maintain. |
