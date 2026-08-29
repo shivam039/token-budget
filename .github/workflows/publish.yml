@@ -79,6 +79,7 @@ jobs:
             "packages/token-budget-embeddings"
             "packages/token-budget-otel"
             "packages/token-budget-pricing"
+            "packages/token-budget-mcp"
           )
           for pkg in "${PACKAGES[@]}"; do
             echo "::group::Dry-run for $pkg"
@@ -100,6 +101,7 @@ jobs:
             "packages/token-budget-embeddings"
             "packages/token-budget-otel"
             "packages/token-budget-pricing"
+            "packages/token-budget-mcp"
           )
           for pkg in "${PACKAGES[@]}"; do
             echo "::group::Publishing $pkg"

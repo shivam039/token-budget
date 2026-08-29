@@ -324,6 +324,7 @@ against every provider, and never evicts anything you've marked `pinned`.
 | [`packages/token-budget-pricing`](./packages/token-budget-pricing) | Static per-model pricing table / `CostModel` for cost accounting. |
 | [`packages/token-budget-otel`](./packages/token-budget-otel) | OpenTelemetry instrumentation: spans + token/cost/eviction counters. |
 | [`packages/token-budget-embeddings`](./packages/token-budget-embeddings) | Reference cosine-similarity `Scorer` for the `semanticRelevance` strategy. |
+| [`packages/token-budget-mcp`](./packages/token-budget-mcp) | MCP server exposing token-budget as callable tools, for testing and driving it from Claude Code/Desktop or any other MCP client. |
 | [`packages/token-budget-devtools`](./packages/token-budget-devtools) | Local Vite app for visually inspecting a `serialize()` dump. Not published to npm. |
 | [`packages/token-budget-py`](./packages/token-budget-py) | Python port. **Work in progress** — partial API, see its own README for exact scope. |
 
@@ -375,8 +376,8 @@ is:
 - [`CONTRIBUTING.md`](./CONTRIBUTING.md) — how to add a community tokenizer, strategy, or framework adapter; the `token-budget-{tokenizer,strategy,adapter}-*` naming convention; and the review bar.
 - [`CHANGELOG.md`](./CHANGELOG.md) — engineering history, phase by phase.
 - [`docs/PRODUCT_AUDIT.md`](./docs/PRODUCT_AUDIT.md) — what exists today, what's production-ready, what's intentionally not built yet.
-- [`docs/DO_NOT_BUILD_YET.md`](./docs/DO_NOT_BUILD_YET.md) — the explicit scope-creep guard (no MCP server, no VS Code extension, no Python rewrite, etc. — and why).
-- [`docs/MCP.md`](./docs/MCP.md) and [`docs/PYTHON_ROADMAP.md`](./docs/PYTHON_ROADMAP.md) — two specific deferred-until-evidence decisions, reasoned through.
+- [`docs/DO_NOT_BUILD_YET.md`](./docs/DO_NOT_BUILD_YET.md) — the explicit scope-creep guard (no VS Code extension, no Python rewrite, no MCP *client* middleware, etc. — and why).
+- [`docs/MCP.md`](./docs/MCP.md) — why an MCP server isn't the right *production* consumption path, and what [`token-budget-mcp`](./packages/token-budget-mcp) actually is instead (a testing/demo surface). [`docs/PYTHON_ROADMAP.md`](./docs/PYTHON_ROADMAP.md) — a second deferred-until-evidence decision, reasoned through.
 - [`docs/FIRST_USERS.md`](./docs/FIRST_USERS.md), [`docs/USER_VALIDATION.md`](./docs/USER_VALIDATION.md), and [`docs/USER_FEEDBACK_TEMPLATE.md`](./docs/USER_FEEDBACK_TEMPLATE.md) — how this project finds its first real users, tracks the funnel, and turns a conversation into a product decision.
 - [`docs/RELEASE_STATUS.md`](./docs/RELEASE_STATUS.md) — exact GitHub-vs-npm version state for every publishable package, regenerated (not hand-typed) on every audit.
 

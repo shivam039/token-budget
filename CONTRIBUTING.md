@@ -32,7 +32,11 @@ First-party packages published before this convention was written —
 `token-budget-tiktoken`, `token-budget-langchain`, `token-budget-claude`,
 `token-budget-pricing`, `token-budget-otel`, `token-budget-embeddings` —
 predate it and keep their existing names rather than being renamed; the
-convention applies going forward, to new packages.
+convention applies going forward, to new *community-extension-shaped*
+packages. `token-budget-mcp` doesn't fit any of the three buckets above
+— it's a testing/tooling surface (an MCP server), not a tokenizer,
+strategy, or message-format adapter — so it keeps a plain descriptive
+name rather than being forced into one.
 
 ### Tokenizers
 

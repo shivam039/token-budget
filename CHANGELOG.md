@@ -6,6 +6,46 @@ how the project got here — useful for understanding *why* something is
 shaped the way it is, not for deciding whether to install it today (see
 the root [`README.md`](./README.md) for that).
 
+## `token-budget-mcp`
+
+A new first-party package: an MCP (Model Context Protocol) server
+exposing `token-budget` as callable tools (`create_budget`,
+`add_message`, `get_context`, `explain`, `stats`,
+`truncate_tool_output`, `list_sessions`, `remove_session`) — for testing
+and driving the library interactively from Claude Code, Claude Desktop,
+or any other MCP client, without writing TypeScript. This reverses the
+letter (not the spirit) of the earlier "no MCP server" call in
+`docs/MCP.md`: the original reasoning — that an MCP server is the wrong
+shape for *production* consumption, since token-budget is an in-process
+buffer-management layer, not a callable tool — still stands and is
+preserved in that doc. What's built here is explicitly a testing/demo
+surface, not a production integration path; see `docs/MCP.md`'s update
+and the package's own README for the distinction.
+
+Session-oriented: `create_budget` returns a `sessionId`, and every other
+stateful tool acts on that same `TokenBudget` instance across separate
+tool calls, mirroring how a real agent loop uses one long-lived
+instance. `summarizeOldest` isn't offered (it needs an async summarizer
+callback that can't cross the MCP tool-call boundary) — `dropOldest`,
+`slidingWindow`, and `priority` are.
+
+Verified genuinely end-to-end, not just unit-tested: a real test spawns
+the *built* `dist/cli.js` as a subprocess and talks to it over actual
+stdio via the MCP SDK's `Client`/`StdioClientTransport` — the same
+mechanism Claude Code and Claude Desktop use — plus a raw hand-written
+JSON-RPC handshake against the built CLI to confirm clean stdout (only
+protocol messages) and empty stderr.
+
+Also fixed, in service of this package: a real TS2589 "type
+instantiation excessively deep" compiler blowup, root-caused to two
+different zod major versions being installed simultaneously in the
+workspace (a nested zod 3.25.x satisfying this package's own initial
+`^3.25.0` declaration, alongside the zod 4.4.3 already hoisted at the
+workspace root for `@langchain/core` and the MCP SDK's own internal
+usage) — fixed by aligning this package's zod dependency to `^4.0.0`,
+the version actually shared across the monorepo, not by disabling any
+type-checking strictness.
+
 ## Model-aware `maxTokens`
 
 `maxTokens` is now optional: set `model` to a name listed in the new
