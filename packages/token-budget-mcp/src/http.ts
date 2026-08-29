@@ -1,8 +1,21 @@
-import { randomUUID, timingSafeEqual } from 'node:crypto';
+import { randomUUID, timingSafeEqual, webcrypto } from 'node:crypto';
 import { createServer as createNodeHttpServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { isInitializeRequest } from '@modelcontextprotocol/sdk/types.js';
 import { createServer as createMcpServer } from './server.js';
+
+// @modelcontextprotocol/sdk's Streamable HTTP transport bridges through Web
+// Standard Request/Response internally and assumes globalThis.crypto (the
+// Web Crypto API) exists. It's absent on Node 18 in some runtimes (observed:
+// real Node 18.20.8 under vitest, though not under a bare `node` process on
+// the same version) — this package still declares Node >=18 support, so
+// polyfill from Node's own node:crypto rather than raising that floor for a
+// transport most users won't even use (the stdio path never needs this).
+if (!globalThis.crypto) {
+  // No DOM lib in this package's tsconfig, so the `Crypto` type name isn't available —
+  // this is a runtime polyfill only, not something callers should get types from.
+  (globalThis as Record<string, unknown>).crypto = webcrypto;
+}
 
 /**
  * Hosted (Streamable HTTP) entry point — a multi-tenant alternative to
