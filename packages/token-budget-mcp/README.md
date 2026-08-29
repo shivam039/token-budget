@@ -26,6 +26,13 @@ npm install -g @shivam.dixit/token-budget-mcp
 
 Or run it without installing, via `npx`.
 
+**Not on npm yet?** If `npx @shivam.dixit/token-budget-mcp` 404s, this
+package hasn't been published yet — see
+[docs/RELEASE_STATUS.md](../../docs/RELEASE_STATUS.md) in the repo root
+for current status. Until then, use the "Run it from a local clone"
+steps below instead — everything else on this page (tools, examples,
+Inspector) works identically either way.
+
 ## Use it with Claude Code
 
 ```sh
@@ -42,6 +49,35 @@ Add to `claude_desktop_config.json`:
     "token-budget": {
       "command": "npx",
       "args": ["-y", "@shivam.dixit/token-budget-mcp"]
+    }
+  }
+}
+```
+
+## Run it from a local clone (works today, before or after publishing)
+
+```sh
+git clone https://github.com/shivam039/token-budget.git
+cd token-budget
+npm install && npm run build
+```
+
+Then point any client at the built CLI directly, in place of the `npx`
+command above — same tools, same behavior, just a local path instead of
+a package name:
+
+```sh
+# Claude Code
+claude mcp add token-budget -- node "$(pwd)/packages/token-budget-mcp/dist/cli.js"
+```
+
+```json
+// Claude Desktop's claude_desktop_config.json — use an absolute path
+{
+  "mcpServers": {
+    "token-budget": {
+      "command": "node",
+      "args": ["/absolute/path/to/token-budget/packages/token-budget-mcp/dist/cli.js"]
     }
   }
 }
