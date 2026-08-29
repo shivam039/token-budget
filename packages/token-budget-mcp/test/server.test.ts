@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
-import { createServer } from '../src/server.js';
+import { createServer, type CreateServerOptions } from '../src/server.js';
 
 /**
  * Exercises the server exactly as a real MCP client would — over an actual
@@ -10,8 +10,8 @@ import { createServer } from '../src/server.js';
  * test). `test/e2e.test.ts` covers the real stdio subprocess path this
  * mirrors — see that file for why both exist.
  */
-async function connectedClient() {
-  const server = createServer();
+async function connectedClient(options?: CreateServerOptions) {
+  const server = createServer(options);
   const client = new Client({ name: 'test-client', version: '0.0.0' });
   const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
   await Promise.all([server.connect(serverTransport), client.connect(clientTransport)]);
@@ -157,5 +157,52 @@ describe('token-budget-mcp server', () => {
     const stats = parseResult((await client.callTool({ name: 'stats', arguments: { sessionId: created.sessionId } })) as any);
     expect(stats.messageCount).toBe(1);
     expect(stats.tokensUsed).toBeGreaterThan(0);
+  });
+});
+
+/**
+ * The limits `src/http.ts` passes into `createServer()` so an untrusted
+ * remote caller can't exhaust this process's memory. The stdio CLI never
+ * sets these (see the describe block above, which uses the no-options
+ * default throughout) — this block is specifically about the opt-in path.
+ */
+describe('token-budget-mcp server resource limits', () => {
+  it('maxSessions is enforced through create_budget, not just at the SessionStore level', async () => {
+    const client = await connectedClient({ maxSessions: 1 });
+    await client.callTool({ name: 'create_budget', arguments: { maxTokens: 1000 } });
+    const second = await client.callTool({ name: 'create_budget', arguments: { maxTokens: 1000 } });
+    expect((second as any).isError).toBe(true);
+    expect((second as any).content[0].text).toMatch(/Session limit reached/);
+  });
+
+  it('maxContentLength rejects an oversized add_message before it touches the session', async () => {
+    const client = await connectedClient({ maxContentLength: 10 });
+    const created = parseResult((await client.callTool({ name: 'create_budget', arguments: { maxTokens: 1000 } })) as any);
+    const result = await client.callTool({
+      name: 'add_message',
+      arguments: { sessionId: created.sessionId, role: 'user', content: 'this is way more than ten characters' },
+    });
+    expect((result as any).isError).toBe(true);
+    expect((result as any).content[0].text).toMatch(/over this server's 10-character limit/);
+    const stats = parseResult((await client.callTool({ name: 'stats', arguments: { sessionId: created.sessionId } })) as any);
+    expect(stats.messageCount).toBe(0);
+  });
+
+  it('maxMessagesPerSession rejects add_message once a session is full', async () => {
+    const client = await connectedClient({ maxMessagesPerSession: 1 });
+    const created = parseResult((await client.callTool({ name: 'create_budget', arguments: { maxTokens: 1000 } })) as any);
+    await client.callTool({ name: 'add_message', arguments: { sessionId: created.sessionId, role: 'user', content: 'first' } });
+    const second = await client.callTool({ name: 'add_message', arguments: { sessionId: created.sessionId, role: 'user', content: 'second' } });
+    expect((second as any).isError).toBe(true);
+    expect((second as any).content[0].text).toMatch(/Session already has 1 messages/);
+  });
+
+  it('with no options set, every limit stays unlimited (unchanged stdio behavior)', async () => {
+    const client = await connectedClient();
+    const created = parseResult((await client.callTool({ name: 'create_budget', arguments: { maxTokens: 100_000 } })) as any);
+    for (let i = 0; i < 5; i++) {
+      const result = await client.callTool({ name: 'add_message', arguments: { sessionId: created.sessionId, role: 'user', content: 'x'.repeat(50) } });
+      expect((result as any).isError).toBeUndefined();
+    }
   });
 });

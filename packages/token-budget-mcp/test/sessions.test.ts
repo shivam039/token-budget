@@ -35,4 +35,19 @@ describe('SessionStore', () => {
     const id = store.create(new TokenBudget({ maxTokens: 1000 }));
     expect(id).toMatch(/^session_/);
   });
+
+  it('maxSessions caps concurrent sessions and throws a clear error once full', () => {
+    const store = new SessionStore({ maxSessions: 2 });
+    store.create(new TokenBudget({ maxTokens: 1000 }));
+    store.create(new TokenBudget({ maxTokens: 1000 }));
+    expect(() => store.create(new TokenBudget({ maxTokens: 1000 }))).toThrow(/Session limit reached \(2\)/);
+  });
+
+  it('removing a session frees a slot under maxSessions', () => {
+    const store = new SessionStore({ maxSessions: 1 });
+    const id = store.create(new TokenBudget({ maxTokens: 1000 }));
+    expect(() => store.create(new TokenBudget({ maxTokens: 1000 }))).toThrow();
+    store.remove(id);
+    expect(() => store.create(new TokenBudget({ maxTokens: 1000 }))).not.toThrow();
+  });
 });

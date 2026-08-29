@@ -7,9 +7,12 @@ the bottom.
 
 **HEAD**: `main` @ the model-aware-`maxTokens` pass (PR #14, core and
 `token-budget-vercel-ai` at `0.1.5`) plus the new `token-budget-mcp`
-package (first-ever release at `0.1.0`). `token-budget-mcp`'s first
-publish attempt needs npm Trusted Publishing configured for that
-package name before it can succeed — see the note below the table.
+package, now at `0.1.1` after adding a hosted Streamable HTTP mode
+(`npm start`, for running it as a shared service e.g. on Render,
+alongside the original stdio mode) on top of its `0.1.0` first release.
+`token-budget-mcp`'s first publish attempt needs npm Trusted Publishing
+configured for that package name before it can succeed — see the note
+below the table.
 
 | Package | GitHub version | npm version (verified) | Ready? | Action |
 | --- | --- | --- | --- | --- |
@@ -23,7 +26,7 @@ package name before it can succeed — see the note below the table.
 | `token-budget-pricing` | 0.1.4 | 0.1.4 | ✅ | None — in sync. |
 | `token-budget-otel` | 0.1.4 | 0.1.4 | ✅ | None — in sync. |
 | `token-budget-embeddings` | 0.1.4 | 0.1.4 | ✅ | None — in sync. |
-| `token-budget-mcp` | 0.1.0 | *(not yet published — see below)* | ⚠️ | Needs npm Trusted Publisher setup for this new package name, then publish. |
+| `token-budget-mcp` | 0.1.1 | *(not yet published — see below)* | ⚠️ | Needs npm Trusted Publisher setup for this new package name, then publish. |
 | `token-budget-devtools` | 0.1.0 | *(not published, `private: true`)* | N/A | Intentionally unpublished. No action. |
 | `token-budget-py` | 0.1.0 | *(not on PyPI)* | N/A | Deliberately unpublished per `docs/PYTHON_ROADMAP.md`. No action. |
 
@@ -53,10 +56,11 @@ every other package.
 
 `token-budget` and `token-budget-vercel-ai` bumped to `0.1.5` for the
 model-aware-`maxTokens` feature (PR #14) — the only two packages whose
-shipped `dist/` actually changed. `token-budget-mcp` is a new package
-at its first version, `0.1.0`. Every other package's `package.json` and
-own `README.md` are untouched since the last publish, so republishing
-them would be a no-op — correctly skipped.
+shipped `dist/` actually changed. `token-budget-mcp` is a new package,
+now at `0.1.1` after its first release (`0.1.0`) plus the hosted HTTP
+mode added right after. Every other package's `package.json` and own
+`README.md` are untouched since the last publish, so republishing them
+would be a no-op — correctly skipped.
 
 ## How this table was verified (not assumed)
 

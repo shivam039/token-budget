@@ -49,6 +49,15 @@ function errorResult(error: unknown) {
   return { content: [{ type: 'text' as const, text: message }], isError: true };
 }
 
+export interface CreateServerOptions {
+  /** Caps concurrent sessions this server instance will hold. Unset (default): unlimited — correct for the stdio CLI's single local user. */
+  maxSessions?: number;
+  /** Caps messages per session. Unset (default): unlimited. */
+  maxMessagesPerSession?: number;
+  /** Caps a single message's content length, in characters. Unset (default): unlimited. */
+  maxContentLength?: number;
+}
+
 /**
  * Builds an MCP server exposing `token-budget` as callable tools: create a
  * budget session, add messages to it, get the strategy-applied context,
@@ -57,9 +66,15 @@ function errorResult(error: unknown) {
  * callable one at a time so the library can be driven interactively from
  * Claude Code, Claude Desktop, or any other MCP client, for testing and
  * demonstration. See the package README for what this is (and isn't) for.
+ *
+ * `options` exists for the hosted HTTP server (`src/http.ts`), which can't
+ * trust a remote caller not to leak memory by opening unbounded sessions
+ * or pasting in unbounded content — the stdio CLI (a single local user who
+ * can already see their own sessions) calls this with no options, i.e.
+ * every limit unset/unlimited, unchanged from before these existed.
  */
-export function createServer(): McpServer {
-  const sessions = new SessionStore();
+export function createServer(options: CreateServerOptions = {}): McpServer {
+  const sessions = new SessionStore({ maxSessions: options.maxSessions });
 
   const server = new McpServer({ name: 'token-budget-mcp', version: '0.1.0' });
 
@@ -113,7 +128,19 @@ export function createServer(): McpServer {
     },
     async ({ sessionId, role, content, pinned, priority, toolCallId }) => {
       try {
+        if (options.maxContentLength !== undefined && content.length > options.maxContentLength) {
+          throw new Error(
+            `content is ${content.length} characters, over this server's ${options.maxContentLength}-character limit per message. ` +
+              'Use truncate_tool_output to shrink it first.',
+          );
+        }
         const budget = sessions.require(sessionId);
+        if (options.maxMessagesPerSession !== undefined && budget.stats().messageCount >= options.maxMessagesPerSession) {
+          throw new Error(
+            `Session already has ${options.maxMessagesPerSession} messages, this server's limit. ` +
+              'Call remove_session and create_budget again to start fresh.',
+          );
+        }
         const message = budget.addMessage({ role: role as Role, content, pinned, priority, toolCallId });
         return textResult(messageSummary(message));
       } catch (error) {

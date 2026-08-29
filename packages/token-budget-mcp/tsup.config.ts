@@ -1,10 +1,10 @@
 import { defineConfig } from 'tsup';
 
 export default defineConfig({
-  entry: ['src/index.ts', 'src/cli.ts'],
+  entry: ['src/index.ts', 'src/cli.ts', 'src/http-cli.ts'],
   format: ['esm', 'cjs'],
   dts: {
-    entry: ['src/index.ts'], // cli.ts has no public API surface of its own to declare
+    entry: ['src/index.ts'], // cli.ts/http-cli.ts are executables, not a public API surface of their own
   },
   clean: true,
   sourcemap: true,
