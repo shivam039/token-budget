@@ -20,6 +20,7 @@ Then `cd examples/<name> && npm start` for any example below.
 
 | Example | Demonstrates |
 | --- | --- |
+| [`quickstart`](./quickstart) | The smallest possible setup — a pinned system prompt, five turns, and eviction once a deliberately small budget overflows. Understandable in under 2 minutes; start here. |
 | [`openai-long-conversation`](./openai-long-conversation) | A 300-turn conversation kept under a 16,000-token budget with summarize-oldest + drop-oldest, converted to OpenAI's wire format via `token-budget-openai`. |
 | [`coding-agent`](./coding-agent) | Tool-call/tool-result atomicity — a stale tool-call pair gets evicted together, never orphaned, while the agent's current-file context survives. |
 | [`coding-agent-context`](./coding-agent-context) | The product demo: a realistic ~20-message coding-agent session (file reads, terminal output, a full test run, old vs. recent turns) that overflows a real budget, with a before/after token count and `explain()`'s full reasoning trail for what was summarized, evicted, and preserved. |

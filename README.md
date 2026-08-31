@@ -47,6 +47,22 @@ through a `summarize` callback you supply). It's the context-management
 layer underneath whatever's already orchestrating your agent — a raw
 provider SDK, LangChain.js, or the Vercel AI SDK.
 
+## What token-budget does NOT do
+
+To be explicit, not just by omission: token-budget is **not** a
+tokenizer (see above), **not** an agent framework (see above), **not** a
+RAG framework or vector-store/retrieval system, **not** a general AI cost
+tracker or analytics platform (cost accounting exists — `costModel`,
+`getUsageReport()` — as a secondary feature riding on the same buffer
+this project already manages, not the product), and **not** a generic
+"AI utility library" grab-bag. It's specifically the layer that decides
+what stays in a growing message buffer under a token budget. See
+[`docs/comparisons.md`](./docs/comparisons.md)'s five-category taxonomy
+for where the boundary is drawn against adjacent tools, and
+[`docs/DO_NOT_BUILD_YET.md`](./docs/DO_NOT_BUILD_YET.md) for what's
+explicitly out of scope and why (a VS Code extension, a hosted dashboard,
+a memory platform, more provider adapters than real usage justifies, ...).
+
 ```sh
 npm install @shivam.dixit/token-budget
 ```
@@ -283,6 +299,19 @@ See [`examples/coding-agent-context`](./examples/coding-agent-context) for
 all of this against a realistic session, printed as a readable report
 rather than raw JSON.
 
+## Which strategy should I use?
+
+| Situation | Strategy |
+| --- | --- |
+| Simple chatbot / short-lived conversation | `slidingWindow` |
+| Long-running agent, mixed-importance context | `priority` |
+| Need continuity across a long session, not just a shorter one | `summarizeOldest` |
+| Simple, predictable trimming, no summarizer available | `dropOldest` (the default) |
+| A hard budget guarantee even if summarizing alone doesn't get there | `chain([summarizeOldest(...), dropOldest()])` |
+
+Full decision table with "why" and "when NOT to use" for each, plus how
+to write a custom strategy: [`docs/strategy-guide.md`](./docs/strategy-guide.md).
+
 ## Token counting modes
 
 | Mode | Config | Trade-off |
@@ -334,6 +363,7 @@ each package's own README for its API, usage, and known limitations.
 
 ## Examples
 
+- [`examples/quickstart`](./examples/quickstart) — the smallest possible setup, understandable in under 2 minutes. Start here if you haven't run anything yet.
 - [`examples/coding-agent-context`](./examples/coding-agent-context) — the flagship demo: a realistic coding-agent session (file reads, terminal output, a full test run) that overflows its budget, with a before/after token count and the full `explain()` trace.
 - [`examples/openai-long-conversation`](./examples/openai-long-conversation) — a 300-turn conversation kept under budget, converted to OpenAI's wire format.
 - [`examples/coding-agent`](./examples/coding-agent) — tool-call/tool-result atomicity, made concrete.
@@ -341,11 +371,29 @@ each package's own README for its API, usage, and known limitations.
 
 ## Docs
 
+**Reference:**
+
+- [`docs/API.md`](./docs/API.md) — every public API: signature, parameters, return value, example, edge cases.
+- [`docs/configuration.md`](./docs/configuration.md) — every `TokenBudgetConfig` option, grouped by purpose.
+- [`docs/strategy-guide.md`](./docs/strategy-guide.md) — which strategy for which situation, when NOT to use each, and how to write a custom one.
+- [`docs/explainability.md`](./docs/explainability.md) — `explain()` in depth: real output, live events, what it doesn't cover.
+- [`docs/model-budgets.md`](./docs/model-budgets.md) — the `maxTokens`/`model` precedence, exactly.
+- [`docs/architecture-patterns.md`](./docs/architecture-patterns.md) — priority-tier blueprints for a coding agent, a RAG agent, and a support agent.
+- [`docs/production-checklist.md`](./docs/production-checklist.md) — what to verify before shipping.
+
+**Learning & migrating:**
+
 - [`docs/FAQ.md`](./docs/FAQ.md) — direct answers to the questions you'd actually search: what a context window is, how to trim history, how to preserve tool calls, which integrations exist.
 - [`docs/guides/ai-agent-context-management.md`](./docs/guides/ai-agent-context-management.md) — the full shape of the context-management problem for long-running agents, and how each piece of token-budget addresses it.
 - [`docs/guides/tool-output-context-management.md`](./docs/guides/tool-output-context-management.md) — preventing one oversized tool result from consuming the whole budget.
+- [`docs/cookbook/`](./docs/cookbook) — single-problem guides (basic chat, pinned prompts, streaming, serialization); see also [`packages/token-budget/COOKBOOK.md`](./packages/token-budget/COOKBOOK.md) for the four full strategy recipes.
+- [`docs/migration/`](./docs/migration) — moving from manual `.shift()` trimming, a simple sliding window, LangChain's trimming, or your own custom context manager.
+- [`docs/why-token-budget.md`](./docs/why-token-budget.md) — every "why not just X" answer in one place.
+
+**Performance & comparisons:**
+
 - [`docs/benchmarks.md`](./docs/benchmarks.md) — reproducible performance numbers (`npm run bench`), including where token-budget loses.
-- [`docs/comparisons.md`](./docs/comparisons.md) — token-budget vs. DIY, `gpt-tokenizer`, LangChain, and provider-native truncation, plus dedicated deep dives for [gpt-tokenizer](./docs/comparisons/token-budget-vs-gpt-tokenizer.md) and [LangChain](./docs/comparisons/token-budget-vs-langchain.md).
+- [`docs/comparisons.md`](./docs/comparisons.md) — token-budget vs. DIY, `gpt-tokenizer`, LangChain, and provider-native truncation, plus dedicated deep dives for [manual trimming](./docs/comparisons/manual-trimming.md), [gpt-tokenizer](./docs/comparisons/token-budget-vs-gpt-tokenizer.md), and [LangChain](./docs/comparisons/token-budget-vs-langchain.md).
 - [`COMPATIBILITY.md`](./COMPATIBILITY.md) — what each adapter/tokenizer package is tested against, and why they use structural typing instead of a real SDK dependency.
 
 ## Development
