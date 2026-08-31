@@ -48,6 +48,9 @@ a library, and it's a reasonable thing to try first.
 pinned-message guarantees, `explain()`, and incremental accounting,
 benchmarked at scale instead of assumed to hold up.
 
+Dedicated deep dive, with the specific failure modes broken out and a
+migration path: [`comparisons/manual-trimming.md`](./comparisons/manual-trimming.md).
+
 ## token-budget vs. `gpt-tokenizer`
 
 **Not really a competitor — a different job.** `gpt-tokenizer` answers

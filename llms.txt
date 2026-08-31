@@ -18,15 +18,28 @@ nothing more — it makes no claims about search ranking or AI citation.
 - [FAQ](https://github.com/shivam039/token-budget/blob/main/docs/FAQ.md) — direct answers: what a context window is, how to trim history, how to preserve tool calls, which integrations exist
 - [AI agent context management guide](https://github.com/shivam039/token-budget/blob/main/docs/guides/ai-agent-context-management.md) — the full shape of the problem and how each piece is addressed
 - [Tool-output context management guide](https://github.com/shivam039/token-budget/blob/main/docs/guides/tool-output-context-management.md) — preventing one oversized tool result from consuming the budget
+- [Why token-budget](https://github.com/shivam039/token-budget/blob/main/docs/why-token-budget.md) — every "why not just X" answer (tokenizer, `.slice()`, `.shift()`, summarize-everything, LangChain, `gpt-tokenizer`) in one place
+
+## Reference
+
+- [API reference](https://github.com/shivam039/token-budget/blob/main/docs/API.md) — every public API: signature, parameters, return value, example
+- [Strategy guide](https://github.com/shivam039/token-budget/blob/main/docs/strategy-guide.md) — which eviction/summarization strategy for which situation
+- [Configuration reference](https://github.com/shivam039/token-budget/blob/main/docs/configuration.md) — every `TokenBudgetConfig` option
+- [Explainability](https://github.com/shivam039/token-budget/blob/main/docs/explainability.md) — `explain()`, the decision trace for why a message was evicted
+- [Model-derived budgets](https://github.com/shivam039/token-budget/blob/main/docs/model-budgets.md) — the `maxTokens`/`model` precedence
+- [Production checklist](https://github.com/shivam039/token-budget/blob/main/docs/production-checklist.md)
 
 ## Try it
 
+- [Quickstart example](https://github.com/shivam039/token-budget/tree/main/examples/quickstart) — the smallest possible setup, understandable in under 2 minutes
 - [Coding-agent example](https://github.com/shivam039/token-budget/tree/main/examples/coding-agent-context) — realistic, deterministic, runnable in under a minute, no API key required
 - [Cookbook](https://github.com/shivam039/token-budget/blob/main/packages/token-budget/COOKBOOK.md) — four tested recipes (customer support, coding agent, RAG chat, long-form writing)
+- [Migration guides](https://github.com/shivam039/token-budget/tree/main/docs/migration) — moving from manual trimming, a sliding window, LangChain, or a custom context manager
 
 ## Comparisons and benchmarks (honest, methodology included)
 
 - [Comparisons overview](https://github.com/shivam039/token-budget/blob/main/docs/comparisons.md) — vs. DIY trimming, gpt-tokenizer, LangChain, provider-native truncation
+- [vs. manual trimming](https://github.com/shivam039/token-budget/blob/main/docs/comparisons/manual-trimming.md)
 - [vs. gpt-tokenizer](https://github.com/shivam039/token-budget/blob/main/docs/comparisons/token-budget-vs-gpt-tokenizer.md)
 - [vs. LangChain](https://github.com/shivam039/token-budget/blob/main/docs/comparisons/token-budget-vs-langchain.md)
 - [Benchmarks](https://github.com/shivam039/token-budget/blob/main/docs/benchmarks.md) — reproducible, includes where token-budget loses

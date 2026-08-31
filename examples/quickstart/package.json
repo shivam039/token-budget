@@ -1,0 +1,17 @@
+{
+  "name": "example-quickstart",
+  "private": true,
+  "version": "0.0.0",
+  "description": "The smallest possible token-budget setup — a pinned system prompt, a few turns, and dropOldest eviction once the budget overflows. Understandable in under 2 minutes.",
+  "type": "module",
+  "scripts": {
+    "start": "tsx src/index.ts"
+  },
+  "dependencies": {
+    "@shivam.dixit/token-budget": "^0.1.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
+  }
+}
