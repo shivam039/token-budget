@@ -28,6 +28,7 @@ below the table.
 | `token-budget-embeddings` | 0.1.4 | 0.1.4 | ✅ | None — in sync. |
 | `token-budget-mcp` | 0.1.1 | *(not yet published — see below)* | ⚠️ | Needs npm Trusted Publisher setup for this new package name, then publish. |
 | `token-budget-devtools` | 0.1.0 | *(not published, `private: true`)* | N/A | Intentionally unpublished. No action. |
+| `token-budget-playground` | 0.1.0 | *(not published, `private: true`)* | N/A | Not an npm package — a Hugging Face Space (built with Vite). See `docs/playground.md`. |
 | `token-budget-py` | 0.1.0 | *(not on PyPI)* | N/A | Deliberately unpublished per `docs/PYTHON_ROADMAP.md`. No action. |
 
 ## New package: `token-budget-mcp` needs manual first-publish setup

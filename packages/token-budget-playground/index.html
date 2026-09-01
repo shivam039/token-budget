@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="See what happens to a long LLM conversation when it hits its context budget. Interactive playground for @shivam.dixit/token-budget — pin messages, protect tool-call pairs, compare eviction strategies, and inspect explain() traces, live in your browser."
+    />
+    <title>LLM Context Budget Playground — token-budget</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2220%22 fill=%22%236366f1%22/><text x=%2250%22 y=%2266%22 font-size=%2260%22 text-anchor=%22middle%22 fill=%22white%22 font-family=%22monospace%22>T</text></svg>"
+    />
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <h1>LLM Context Budget Playground</h1>
+      <p class="tagline">See what happens to a long LLM conversation when it hits its context budget.</p>
+      <nav class="tabs" aria-label="Playground sections">
+        <button type="button" id="tab-playground" class="tab-btn" aria-pressed="true">Playground</button>
+        <button type="button" id="tab-benchmarks" class="tab-btn" aria-pressed="false">Benchmarks</button>
+      </nav>
+    </header>
+
+    <main id="app">
+      <section id="panel-playground" class="panel">
+        <div class="layout">
+          <section class="col col-conversation" aria-labelledby="heading-conversation">
+            <h2 id="heading-conversation">Conversation</h2>
+            <div class="presets-row">
+              <label for="preset-select">Load example</label>
+              <select id="preset-select"></select>
+              <button type="button" id="btn-generate">Generate long conversation…</button>
+            </div>
+            <div id="generate-panel" class="generate-panel" hidden>
+              <label for="generate-category">Scenario</label>
+              <select id="generate-category"></select>
+              <label for="generate-count">Message count</label>
+              <select id="generate-count">
+                <option value="20">20</option>
+                <option value="100">100</option>
+                <option value="1000">1,000</option>
+                <option value="5000">5,000</option>
+              </select>
+              <button type="button" id="btn-generate-confirm">Generate</button>
+              <p class="hint">Deterministic — the same scenario and count always produce the same conversation.</p>
+            </div>
+            <ul id="conversation-editor" class="conversation-editor" aria-label="Conversation messages"></ul>
+            <button type="button" id="btn-add-message">+ Add message</button>
+          </section>
+
+          <section class="col col-controls" aria-labelledby="heading-controls">
+            <h2 id="heading-controls">Context budget</h2>
+
+            <label for="context-preset">Context size preset</label>
+            <select id="context-preset"></select>
+
+            <label for="max-tokens">Max tokens<span class="hint-inline">(effective budget)</span></label>
+            <input type="number" id="max-tokens" min="1" value="600" />
+
+            <label for="strategy-select">Eviction strategy</label>
+            <select id="strategy-select"></select>
+            <p id="strategy-note" class="hint" role="status"></p>
+
+            <button type="button" id="btn-run" class="primary">Apply budget</button>
+
+            <div class="toggle-row">
+              <input type="checkbox" id="toggle-compare" />
+              <label for="toggle-compare">Compare strategies (dropOldest / slidingWindow / priority)</label>
+            </div>
+
+            <h2>Before / after</h2>
+            <div id="stats-panel" class="stats-panel" role="status" aria-live="polite"></div>
+
+            <div id="compare-panel" class="compare-panel" hidden></div>
+          </section>
+
+          <section class="col col-results" aria-labelledby="heading-results">
+            <h2 id="heading-results">Result</h2>
+            <ul id="result-list" class="result-list" aria-label="Messages after applying the budget, with kept/evicted/pinned status"></ul>
+          </section>
+
+          <section class="col col-explain" aria-labelledby="heading-explain">
+            <h2 id="heading-explain">Why? (explain())</h2>
+            <div id="explain-panel" class="explain-panel" aria-live="polite"></div>
+          </section>
+        </div>
+      </section>
+
+      <section id="panel-benchmarks" class="panel" hidden>
+        <h2>Benchmarks</h2>
+        <p>
+          <strong>token-budget is a context-management library, not a raw tokenizer.</strong>
+          Raw tokenizer speed is not its primary goal — see the honest numbers below, not a claim that it's the fastest way to count tokens.
+        </p>
+
+        <h3>Raw tokenization benchmark (reference)</h3>
+        <div id="raw-tokenizer-bench"></div>
+
+        <h3>Context-management benchmark</h3>
+        <p class="hint">
+          Runs live in this browser tab, comparing token-budget against a naive DIY <code>shift()</code>-and-recompute loop, using the
+          <em>same</em> simple length-based token counter for both — so this isolates buffer/eviction machinery cost, not tokenizer
+          choice. Kept small enough to stay responsive; the full 50,000-message benchmark (including a real LangChain <code>trimMessages</code>
+          comparison) is documented below with the exact command to reproduce it locally.
+        </p>
+        <label for="bench-size">Message count</label>
+        <select id="bench-size">
+          <option value="1000">1,000</option>
+          <option value="5000" selected>5,000</option>
+          <option value="10000">10,000</option>
+        </select>
+        <button type="button" id="btn-run-bench">Run in-browser benchmark</button>
+        <div id="live-bench-result" role="status" aria-live="polite"></div>
+
+        <h3>Published reference numbers (50,000 messages)</h3>
+        <div id="reference-bench-table"></div>
+
+        <h3>Run the full benchmark locally</h3>
+        <pre><code>git clone https://github.com/shivam039/token-budget.git
+cd token-budget
+npm install && npm run build
+npm run bench</code></pre>
+        <p class="hint">
+          Full methodology, environment, and every number: <a href="https://github.com/shivam039/token-budget/blob/main/docs/benchmarks.md" target="_blank" rel="noopener">docs/benchmarks.md</a>.
+        </p>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <p>
+        Built with <a href="https://www.npmjs.com/package/@shivam.dixit/token-budget" target="_blank" rel="noopener"><code>@shivam.dixit/token-budget</code></a>
+        — <a href="https://github.com/shivam039/token-budget" target="_blank" rel="noopener">GitHub</a>
+      </p>
+    </footer>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
