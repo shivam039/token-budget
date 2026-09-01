@@ -41,6 +41,7 @@ Status values: NOT CHECKED · NOT RELEVANT · PAID — SKIPPED · DRAFT READY
 | Reddit r/SideProject | Community | reddit.com/r/SideProject | DRAFT READY | 2026-08-28 | Free | LOW-MEDIUM | Self-promo-friendly but general audience, not necessarily LLM-agent builders. |
 | Indie Hackers | Community | indiehackers.com | DRAFT READY | 2026-08-28 | Free | LOW | Business/product audience mismatch for a non-monetized library; drafted anyway per instructions. |
 | Product Hunt | Launch platform | producthunt.com | DRAFT READY | 2026-08-28 | Free | LOW | Explicitly not a high-priority channel for an npm library per task instructions — drafted, not recommended to prioritize. |
+| Medium | Long-form blog platform | medium.com | DRAFT READY | 2026-09-01 | Free | MEDIUM | Full technical article drafted (title/subtitle/body with sourced benchmark numbers from `docs/benchmarks.md`, no invented figures) in `community-posts.md`. Needs a human account to publish under — same as every other community draft. |
 
 Full awesome-list research (including rejected candidates and why) is in
 `awesome-list-candidates.md`; exact copy-paste-ready PR content for the

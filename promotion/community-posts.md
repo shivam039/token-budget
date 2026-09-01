@@ -336,3 +336,158 @@ its result once the session runs long enough. token-budget makes context
 management an explicit, inspectable decision instead of an implicit one.
 Happy to answer questions about the design.
 ```
+
+---
+
+## Medium
+
+**Fit assessment:** Medium suits a longer technical walkthrough better
+than any of the short launch posts above — the format below leads with
+the failure mode (with a concrete before/after), walks through the
+mechanism, and closes with the real, sourced benchmark numbers from
+`docs/benchmarks.md` rather than a vague performance claim. No numbers
+below are invented — each is quoted directly from that file, cited so
+they stay checkable against `npm run bench`.
+
+**Draft title:**
+```
+Why "messages.shift()" breaks your AI agent (and what to do instead)
+```
+
+**Draft subtitle:**
+```
+The three failure modes of naive context trimming, and a benchmarked
+look at what replacing it with an explicit token budget actually costs
+```
+
+**Draft body:**
+
+```
+Every long-running AI agent hits the same wall eventually: conversation
+history, tool calls, tool results, and retrieved context keep growing,
+and the model's context window doesn't. Something has to give.
+
+The first fix almost everyone writes looks like this:
+
+    while (estimateTokens(messages) > maxTokens) {
+      messages.shift();
+    }
+
+It works. For a while.
+
+## Three ways it breaks
+
+**It deletes the system prompt.** Age-based trimming has no concept of
+"this one is pinned" — the system prompt is just the oldest message in
+the buffer, and the loop above doesn't know the difference between it
+and a stale tool result from ten turns ago. Eventually it gets shifted
+out, and the agent quietly loses its instructions. This is the kind of
+bug that only shows up after a session has run long enough, which makes
+it miserable to catch in testing.
+
+**It splits a tool call from its result.** If the call lands at position
+`shift()` is about to remove and the result doesn't, you get an orphaned
+`tool_call_id` — a tool result with no matching call, or vice versa.
+Most provider APIs reject the resulting request outright. This isn't a
+degraded response; it's a hard error, and it's specifically the kind of
+error that's hard to reproduce because it depends on exactly where the
+trim boundary happened to fall that turn.
+
+**It gives you no way to explain what happened.** When someone asks "why
+did the agent forget X," the honest answer with `.shift()` is "we don't
+know — the array is just shorter now." Nothing recorded which message
+left, or why.
+
+## What an explicit token budget looks like
+
+I wrote [token-budget](https://github.com/shivam039/token-budget) (MIT,
+TypeScript) to make this an explicit, inspectable decision instead of an
+implicit side effect of an `if` statement:
+
+    import { TokenBudget, strategies } from '@shivam.dixit/token-budget';
+
+    const budget = new TokenBudget({
+      maxTokens: 128000,
+      reserve: 4096,
+      strategy: strategies.priority(),
+    });
+
+    budget.addMessage({ role: 'system', content: systemPrompt, pinned: true });
+    budget.addMessage({ role: 'user', content: userText, toolCallId, priority: 5 });
+
+    const { messages, evicted } = await budget.getContext();
+
+`pinned: true` means the system prompt is never evicted, by any
+strategy, regardless of age. A `toolCallId` linking a tool result back to
+the call it answers means every built-in strategy treats the pair as one
+atomic unit — both survive, or both go, never split. And every call is
+explainable:
+
+    const report = budget.explain();
+    // { strategyApplied: 'priority', steps: [{ evicted: [{ id, reason }], ... }] }
+
+That last part matters more than it sounds like it should. The first
+time `explain()` told me *exactly* which message got dropped and why,
+during a debugging session that would otherwise have been "stare at logs
+and guess," I understood why I'd bothered writing this instead of just
+tightening the `.shift()` loop.
+
+## Does the extra machinery cost anything?
+
+This is the part I don't want to hand-wave. Explicit token budgets,
+pluggable strategies, and an explain trace sound like they should be
+slower than a bare `while` loop. Benchmarked, not assumed — three
+findings from `docs/benchmarks.md`, reproducible via `npm run bench`:
+
+**Recomputing the running token count from scratch on every add** (the
+obvious way to write the naive loop) is quadratic. At 100,000 messages,
+token-budget's incremental accounting takes ~287ms while a full recount
+takes ~28,854ms for the same workload — about 100× slower for naive
+recount, not a rounding error, and the gap widens with size (at 10,000
+messages it's already ~19.5ms vs. ~266.9ms, roughly 14×).
+
+**Querying a bounded window against a large history** — the shape most
+real apps actually run (a big stored history, a smaller window actually
+sent to the model) — is where the gap gets large. At a 10,000-token
+window over a big history, token-budget took ~76.6ms; a comparable
+LangChain.js `trimMessages` call took ~21,883ms in the same benchmark.
+That's not "LangChain is bad" — `trim_messages` isn't built for
+repeated, large-scale eviction against a big history, which is exactly
+the scenario this benchmark is testing.
+
+**Where token-budget is honestly slower:** its own tokenizer package,
+`token-budget-tiktoken`, is slower than the standalone `gpt-tokenizer` at
+raw token counting (521k tok/sec vs. 5.7M tok/sec in the same benchmark
+suite) — published without spin, because a tokenizer counting fast isn't
+the problem this library is solving. You can use `gpt-tokenizer` *as*
+token-budget's tokenizer directly if raw counting speed matters more to
+you than anything else.
+
+## Where this fits
+
+It's not an agent framework — it doesn't orchestrate tool calls or call
+a model itself. It's the layer underneath whatever already is: a raw
+provider SDK, LangChain.js, or the Vercel AI SDK, with adapters for
+OpenAI, Anthropic, and both of those. Strategies compose (drop-oldest,
+sliding-window, priority, summarize-oldest, chainable), and it's zero
+required runtime dependencies.
+
+It's early (0.1.x). If you're already hand-rolling a version of this and
+have hit an edge case I haven't, I'd genuinely like to hear about it.
+
+GitHub: https://github.com/shivam039/token-budget
+npm: https://www.npmjs.com/package/@shivam.dixit/token-budget
+Full benchmark methodology (including where token-budget loses):
+https://github.com/shivam039/token-budget/blob/main/docs/benchmarks.md
+```
+
+**Tags to use on Medium:** `Artificial Intelligence`, `LLM`, `TypeScript`,
+`Software Engineering`, `Open Source` (Medium allows up to 5 per post).
+
+**Note on publishing this:** same limitation as the directory listings in
+`devtool-directory-submissions.md` — `medium.com` requires a signed-in
+human account to publish under (a "Draft" isn't public until a real
+person reviews and hits Publish), and posting under a real identity is
+the right call anyway for something with an author's name attached. This
+draft is ready to paste into a new Medium story as-is; nothing further
+needs writing.
