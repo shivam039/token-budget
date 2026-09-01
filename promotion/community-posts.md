@@ -341,6 +341,11 @@ Happy to answer questions about the design.
 
 ## Medium
 
+**Published:** https://medium.com/@shivamdixit039/your-llm-agent-doesnt-need-a-bigger-context-window-it-needs-a-better-one-4dc554b1a15a
+(live, 2026-09-01 — `medium.com` is egress-blocked from this sandbox so
+the final published text couldn't be diffed against the draft below; the
+draft is kept as-is for reference, not necessarily what's live verbatim.)
+
 **Fit assessment:** Medium suits a longer technical walkthrough better
 than any of the short launch posts above — the format below leads with
 the failure mode (with a concrete before/after), walks through the
