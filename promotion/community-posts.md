@@ -496,3 +496,83 @@ person reviews and hits Publish), and posting under a real identity is
 the right call anyway for something with an author's name attached. This
 draft is ready to paste into a new Medium story as-is; nothing further
 needs writing.
+
+---
+
+## Companion posts linking the published Medium article
+
+These link the now-live article
+(https://medium.com/@shivamdixit039/your-llm-agent-doesnt-need-a-bigger-context-window-it-needs-a-better-one-4dc554b1a15a)
+directly, rather than re-pitching the project from scratch — shorter,
+and each written to fit the platform it's for. Same status as everything
+else in this file: drafted, not posted; needs a real human account.
+
+### Hacker News
+
+**Rules checked:** A plain link submission (not "Show HN," since this
+points to an article, not the repo itself) — title should match the
+article's actual title closely, not be editorialized, per HN's
+[submission guidelines](https://news.ycombinator.com/newsguidelines.html).
+
+**Where to link:** the Medium article URL directly.
+
+**Title:**
+```
+Your LLM Agent Doesn't Need a Bigger Context Window, It Needs a Better One
+```
+
+*(No body needed — HN link posts don't take one; the article speaks for
+itself. If a first comment feels right once it's live, something like:
+"Author here — happy to go into the mechanism/benchmark numbers in more
+depth if anyone's interested" works, matching the maker-comment tone
+used on the Show HN draft above.)*
+
+### Reddit — r/programming
+
+**Rules checked:** r/programming generally allows blog-post links if the
+content is substantive and not pure self-promotion spam; a post that's
+mostly technical content (this is) fits better than a bare launch
+announcement would. **Action before posting:** r/programming's current
+rules weren't independently reconfirmed in this pass — check the sidebar
+before posting, same caveat as the other subreddit drafts above.
+
+**Where to link:** the Medium article URL directly.
+
+**Draft title:**
+```
+Your LLM Agent Doesn't Need a Bigger Context Window, It Needs a Better One
+```
+
+*(Reddit link posts don't need a body either — the title is the pitch.
+If you want a top comment adding context, something short like: "Wrote
+this up after hitting the same context-trimming bugs on a few different
+agent projects — mechanism + real benchmark numbers in the post, code's
+linked at the bottom." keeps it low-key rather than salesy.)*
+
+### LinkedIn
+
+**Format note:** LinkedIn rewards a short personal framing above the
+link, not a repost of the headline — written in first person, shorter
+than the Reddit/HN versions since it's meant to be read in-feed without
+clicking through.
+
+**Draft post:**
+```
+Every long-running AI agent hits the same wall: conversation history,
+tool calls, and tool results keep growing, and the context window
+doesn't. The usual first fix — trim the oldest messages — works until it
+quietly drops the system prompt or splits a tool call from its result.
+
+I wrote up the three specific ways that breaks, what an explicit token
+budget looks like instead, and the actual benchmark numbers (not just a
+claim) for what the extra machinery costs.
+
+Link in comments 👇
+
+#TypeScript #AI #LLM #OpenSource #SoftwareEngineering
+```
+
+*(Posting the link as a comment rather than in the body is a deliberate
+LinkedIn convention — the algorithm suppresses outbound-link posts in
+feed reach; drop the actual Medium URL as the first comment right after
+posting.)*
