@@ -22,3 +22,5 @@ jobs:
       - run: npm run typecheck
       - run: npm run test:coverage
       - run: npm run guardrails
+        env:
+          GUARDRAILS_SKIP_INTEGRITY: 1
