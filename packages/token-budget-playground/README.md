@@ -4,7 +4,7 @@ emoji: 🧮
 colorFrom: indigo
 colorTo: blue
 sdk: static
-app_file: dist/index.html
+app_file: index.html
 pinned: false
 license: mit
 tags:
@@ -66,7 +66,7 @@ npm run build --workspace=token-budget-playground   # outputs packages/token-bud
 
 ## Deploying this Space
 
-This Space uses the `static` SDK — Hugging Face serves whatever's at `app_file` (`dist/index.html`) directly, no server process. No secrets or environment variables are required by the *playground itself* — it makes no network calls and needs no API key at runtime.
+This Space uses the `static` SDK — Hugging Face serves whatever's at `app_file` (`index.html`, at the Space repo's root — the deploy step copies this package's built `dist/` *contents* to that root, not the `dist/` folder itself) directly, no server process. No secrets or environment variables are required by the *playground itself* — it makes no network calls and needs no API key at runtime.
 
 ### Automatic (recommended): GitHub Actions
 
