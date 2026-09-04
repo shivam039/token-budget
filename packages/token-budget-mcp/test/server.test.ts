@@ -128,6 +128,17 @@ describe('token-budget-mcp server', () => {
     expect(context.strategyApplied).toBe('priority');
   });
 
+  it('smartPriority strategy actually applies through the protocol, auto-pinning the system prompt', async () => {
+    const created = parseResult((await client.callTool({ name: 'create_budget', arguments: { maxTokens: 20, strategy: 'smartPriority' } })) as any);
+    await client.callTool({ name: 'add_message', arguments: { sessionId: created.sessionId, role: 'system', content: 'system prompt filler text here' } });
+    await client.callTool({ name: 'add_message', arguments: { sessionId: created.sessionId, role: 'user', content: 'a user turn' } });
+    await client.callTool({ name: 'add_message', arguments: { sessionId: created.sessionId, role: 'user', content: 'a more recent user turn' } });
+    const context = parseResult((await client.callTool({ name: 'get_context', arguments: { sessionId: created.sessionId } })) as any);
+    expect(context.strategyApplied).toBe('smart-priority');
+    // Auto-pinned even though nobody set pinned: true explicitly.
+    expect(context.messages.some((m: any) => m.role === 'system')).toBe(true);
+  });
+
   it('slidingWindow strategy actually applies through the protocol once slidingWindowTurns is set', async () => {
     const created = parseResult(
       (await client.callTool({ name: 'create_budget', arguments: { maxTokens: 1000, strategy: 'slidingWindow', slidingWindowTurns: 1 } })) as any,

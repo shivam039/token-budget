@@ -7,3 +7,5 @@ export type { SummarizeOldestOptions, OnMaxDepthReached } from './summarizeOldes
 export { chain } from './chain.js';
 export { semanticRelevance } from './semanticRelevance.js';
 export type { SemanticRelevanceOptions } from './semanticRelevance.js';
+export { smartPriority } from './smartPriority.js';
+export type { SmartPriorityOptions } from './smartPriority.js';

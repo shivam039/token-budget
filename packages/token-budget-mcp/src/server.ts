@@ -4,7 +4,7 @@ import { TokenBudget, strategies, truncateToolOutput, createEstimateTokenizer } 
 import type { BudgetMessage, Role } from '@shivam.dixit/token-budget';
 import { SessionStore } from './sessions.js';
 
-const STRATEGY_NAMES = ['dropOldest', 'slidingWindow', 'priority'] as const;
+const STRATEGY_NAMES = ['dropOldest', 'slidingWindow', 'priority', 'smartPriority'] as const;
 type StrategyName = (typeof STRATEGY_NAMES)[number];
 
 /**
@@ -13,6 +13,10 @@ type StrategyName = (typeof STRATEGY_NAMES)[number];
  * have to live in-process, and there's no way for an MCP tool call itself
  * to *be* that callback (a synchronous decision, made once, from plain
  * JSON arguments) — see the package README's "What isn't exposed" section.
+ * `smartPriority` is offered *without* its own optional `condense` option
+ * for the same reason: condensation needs an async summarizer callback.
+ * Its auto-pin-system/auto-pin-latest-user/tool-drop-first behavior needs
+ * no callback, so that much works fine over MCP.
  */
 function buildStrategy(name: StrategyName | undefined, slidingWindowTurns: number | undefined) {
   switch (name ?? 'dropOldest') {
@@ -20,6 +24,8 @@ function buildStrategy(name: StrategyName | undefined, slidingWindowTurns: numbe
       return strategies.dropOldest();
     case 'priority':
       return strategies.priority();
+    case 'smartPriority':
+      return strategies.smartPriority();
     case 'slidingWindow':
       if (slidingWindowTurns === undefined) {
         throw new Error('strategy "slidingWindow" requires slidingWindowTurns to be set.');

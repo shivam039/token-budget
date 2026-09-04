@@ -24,7 +24,7 @@ Edit a conversation, set a token budget, pick an eviction strategy, and watch �
 ## What you can do here
 
 - **Edit a conversation** — system/user/assistant/tool messages, with pin and priority controls, starting from a realistic coding-agent example (a JWT-authentication discussion).
-- **Set a budget and strategy** — `dropOldest`, `slidingWindow`, `priority`, or `summarizeOldest` (using a deterministic demo summarizer, since this runs with no API key and no server calls — see below).
+- **Set a budget and strategy** — `dropOldest`, `slidingWindow`, `priority`, `summarizeOldest` (using a deterministic demo summarizer, since this runs with no API key and no server calls — see below), or `smartPriority` (zero-config: auto-pins the system prompt + current query, drops tool-call noise first).
 - **Inspect retained/evicted messages** — every message tagged KEPT, EVICTED, PINNED, or as part of a protected tool-call/tool-result pair.
 - **See tool-call atomicity** — a dedicated preset shows a tool call and its result surviving or leaving together, never split.
 - **See a pinned system prompt survive** — a preset with a small budget and a pinned instruction, demonstrating the actual production use case.

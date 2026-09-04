@@ -166,6 +166,7 @@ Quick map:
 | `summarizeOldest({ summarize })` | Old context has semantic value worth keeping in compressed form, **and** the host app already has (or can supply) a real `summarize()` — an LLM call or equivalent. Do not add this strategy just because it sounds better; it costs an extra model call per fold and needs somewhere to source a summarizer from. |
 | `semanticRelevance({ scorer })` | Relevance to the current query matters more than recency or priority, and an embedding/scoring function is available (`token-budget-embeddings` gives a reference cosine-similarity `Scorer`). |
 | `chain([...])` | Compose the above — e.g. `chain([summarizeOldest(...), priority()])` as a fold pass plus a hard backstop. |
+| `smartPriority()` | Zero-config default: auto-pins system + current query, deprioritizes untagged tool-call units, optionally condenses older turns. Fast starting point when messages aren't already hand-tagged; never overrides an explicit `pinned`/`priority`. |
 
 ### 5. Install only the minimal package
 

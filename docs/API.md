@@ -22,7 +22,7 @@ import { TokenBudget, strategies, /* ... */ } from '@shivam.dixit/token-budget';
 - [Streaming](#streaming) — `beginStream`, `appendStreamChunk`, `endStream`, `abortStream`
 - [Events](#events) — `on`, `off`, `listenerCount`
 - [Reconfiguration](#reconfiguration) — `setMaxTokens`, `setReserve`
-- [Strategies](#strategies) — `dropOldest`, `slidingWindow`, `priority`, `summarizeOldest`, `chain`, `semanticRelevance`
+- [Strategies](#strategies) — `dropOldest`, `slidingWindow`, `priority`, `summarizeOldest`, `chain`, `semanticRelevance`, `smartPriority`
 - [Custom-strategy building blocks](#custom-strategy-building-blocks) — `groupIntoUnits`, `filterByUnits`, `unitTokens`, `evictOldestUnitsToBudget`
 - [Tool output](#tool-output) — `truncateToolOutput`
 - [Model-derived budgets](#model-derived-budgets) — `MODEL_CONTEXT_WINDOWS`, `getModelContextWindow`
@@ -674,6 +674,29 @@ strategy: strategies.chain([
 **Purpose:** Scores every non-pinned/non-`mustRetain` message and retains the highest-scoring units until the budget is full — a relevance-ranked alternative to age- or priority-based eviction.
 
 **Important behavior:** Caches scores in a per-instance closure. **Construct one instance per `TokenBudget`** — sharing one instance across multiple budgets can cross-contaminate cached scores if their message ids collide (e.g. two tenants both starting ids from `"1"`). `scorer` itself is fine to reuse.
+
+### `strategies.smartPriority`
+
+**Signature:** `smartPriority(options?: SmartPriorityOptions): Strategy`
+
+| Parameter | Type | Required | Default | Description |
+| --- | --- | --- | --- | --- |
+| `autoPinSystem` | `boolean` | No | `true` | Auto-pin every `system`-role message. Never overrides an explicit `pinned: false`. |
+| `autoPinLatestUser` | `boolean` | No | `true` | Auto-pin the most recent `user`-role message (the current query). |
+| `toolPriority` | `number` | No | `-1` | Effective priority applied to tool-call/tool-result units that don't already have an explicit `priority` — below the implicit `0` default for untagged conversation turns, so they're evicted first. |
+| `condense` | `SummarizeOldestOptions` | No | — | Folds older non-pinned turns into one synthetic message (a real summary, or a fixed placeholder string) before priority-based eviction, instead of dropping them outright. Takes the same options as `summarizeOldest()`. Omit to stay synchronous. |
+
+**Purpose:** A zero-config, opinionated default composing `pinned`, `priority`, and (optionally) `summarizeOldest` into the three-tier policy most agents actually want without hand-tagging every message: never drop the system prompt or current query, drop tool-call/tool-result units first, and condense (rather than just discard) older turns when `condense` is set. Never overrides a `pinned`/`priority` value you set explicitly — it only fills in defaults for messages that didn't specify one. `sync` unless `condense` is set (condensation needs `getContext()`, not `getContextSync()`, the same as `summarizeOldest`).
+
+**Example:**
+
+```ts
+strategy: strategies.smartPriority({
+  condense: { summarize: mySummarizer, blockSize: 4 },
+})
+```
+
+**Related APIs:** [`strategies.priority`](#strategiespriority), [`strategies.summarizeOldest`](#strategiessummarizeoldest) — the two primitives this composes. For full manual control over tagging instead of these defaults, compose them directly yourself.
 
 ---
 

@@ -60,6 +60,7 @@ function populateSelects(): void {
     <option value="slidingWindow">slidingWindow — keep only the last N turns</option>
     <option value="priority">priority — importance-based eviction</option>
     <option value="summarizeOldest">summarizeOldest — fold old messages into a summary (demo summarizer)</option>
+    <option value="smartPriority">smartPriority — zero-config: protect essentials, drop tool noise first</option>
   `;
 
   generateCategorySelect.innerHTML = ALL_CATEGORIES.map((c) => `<option value="${c}">${c}</option>`).join('');
@@ -81,6 +82,8 @@ function buildStrategy(name: StrategyName) {
       return strategies.priority();
     case 'summarizeOldest':
       return strategies.summarizeOldest({ summarize: demoSummarize });
+    case 'smartPriority':
+      return strategies.smartPriority();
   }
 }
 
@@ -111,13 +114,14 @@ function renderResults(): void {
 }
 
 async function runComparison(): Promise<void> {
-  const descriptions: Record<'dropOldest' | 'slidingWindow' | 'priority', string> = {
+  const descriptions: Record<'dropOldest' | 'slidingWindow' | 'priority' | 'smartPriority', string> = {
     dropOldest: 'Simple chronological eviction — oldest non-pinned messages go first.',
     slidingWindow: 'Keeps only the last N turns (here: 6), plus pinned messages, regardless of token size.',
     priority: 'Evicts the lowest-priority non-pinned messages first, not purely by age.',
+    smartPriority: 'Zero-config: auto-pins system + current query, drops untagged tool-call units first.',
   };
   const rows: CompareRow[] = [];
-  for (const name of ['dropOldest', 'slidingWindow', 'priority'] as const) {
+  for (const name of ['dropOldest', 'slidingWindow', 'priority', 'smartPriority'] as const) {
     const budget = new TokenBudget({ maxTokens: state.maxTokens, strategy: buildStrategy(name) });
     for (const m of state.messages) budget.addMessage(toAddMessageInput(m));
     const ctx = budget.getContextSync();

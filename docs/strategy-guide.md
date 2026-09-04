@@ -1,6 +1,6 @@
 # Strategy guide: which one should I use?
 
-Six built-in strategies, one question each is best at. All are set via
+Seven built-in strategies, one question each is best at. All are set via
 `TokenBudgetConfig.strategy`; every one respects pinned messages and
 tool-call/tool-result atomicity regardless of which you pick — see the
 [root README](../README.md#what-this-actually-does). Exact signatures:
@@ -17,6 +17,7 @@ tool-call/tool-result atomicity regardless of which you pick — see the
 | Simple, predictable trimming, no summarizer available | `dropOldest` | The default and the floor — no configuration, no external summarizer call, easy to reason about. |
 | Retrieval-augmented (RAG) chat | `summarizeOldest` for conversation + re-inject fresh retrieved docs each turn | Retrieved chunks are cheap to regenerate and go stale immediately; conversational history is the part worth preserving via summary. See the [RAG chat recipe](../packages/token-budget/COOKBOOK.md#rag-chat). |
 | You have embeddings and want relevance-ranked retention | `semanticRelevance` | Ranks by actual similarity to the current query, not just age or a manually-set priority number. |
+| Want the "never drop system/current-query, drop tool calls first, condense the rest" defaults without hand-tagging every message | `smartPriority` | Auto-pins system + current query and deprioritizes untagged tool-call/tool-result units — a zero-config starting point; still respects any `pinned`/`priority` you set yourself. |
 | Need a hard budget guarantee even if summarization doesn't get there | `chain([summarizeOldest(...), dropOldest()])` | `dropOldest` as a backstop guarantees the result fits, even if one round of summarizing isn't enough. |
 | None of the above fit your importance model | A custom strategy | See [Writing a custom strategy](#writing-a-custom-strategy) below. |
 
@@ -139,6 +140,36 @@ for this is a bigger investment than `priority`, which gets most of the
 same benefit from a number you set yourself. Also skip it if your
 messages are small/cheap to score in bulk but a scoring call per message
 would add real latency — check `scoringTimeoutMs` and set a `fallback`.
+
+### `smartPriority`
+
+```ts
+strategy: strategies.smartPriority()
+// or, with condensation instead of dropping older turns:
+strategy: strategies.smartPriority({
+  condense: { summarize: mySummarizer, blockSize: 4 },
+})
+```
+
+A zero-config default composing `pinned`, `priority`, and (optionally)
+`summarizeOldest`: auto-pins every `system` message and the current
+(most recent) `user` message, defaults untagged tool-call/tool-result
+units to a low priority so they're evicted before ordinary conversation
+turns, and — if you pass `condense` — folds older non-pinned turns into
+a synthetic summary (a real one via your `summarize` callback, or a
+fixed placeholder string) instead of dropping them outright. Never
+overrides a `pinned`/`priority` you set explicitly — it only fills in
+defaults for messages that didn't specify one.
+
+**Use when:** you want the three-tier "never drop the essentials, drop
+tool noise first, condense rather than discard" policy most agents
+actually want, without writing `pinned: true`/`priority: N` on every
+message yourself.
+
+**Don't use when:** you need precise, fully manual control over exactly
+what's pinned/prioritized — compose `priority()` (and
+`summarizeOldest()`/`chain()`) directly instead, tagging messages
+yourself rather than relying on this strategy's defaults.
 
 ## Writing a custom strategy
 

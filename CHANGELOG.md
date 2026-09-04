@@ -6,6 +6,24 @@ how the project got here — useful for understanding *why* something is
 shaped the way it is, not for deciding whether to install it today (see
 the root [`README.md`](./README.md) for that).
 
+## `smartPriority` strategy
+
+Added a seventh built-in strategy, `strategies.smartPriority()`, as a
+zero-config default composing `pinned` + `priority` (and optionally
+`summarizeOldest`) into the three-tier policy most agents actually want
+without hand-tagging every message: auto-pins every `system` message and
+the current (most recent) `user` message, defaults untagged tool-call/
+tool-result units to a priority below ordinary turns so they're evicted
+first, and — when a `condense` option is passed — folds older non-pinned
+turns into a synthetic summary instead of dropping them. Never overrides
+a `pinned`/`priority` set explicitly on a message; synchronous unless
+`condense` is set. Exposed through `token-budget-mcp`'s `create_budget`
+tool (sync-only — `condense` isn't exposed there, matching
+`summarizeOldest`'s existing exclusion) and wired into the playground's
+strategy picker and comparison table. Documented in `docs/API.md`,
+`docs/strategy-guide.md`, the root README's strategy table, and the
+`token-budget-context-management` Agent Skill.
+
 ## `token-budget-mcp` hosted (Streamable HTTP) mode
 
 Added a second entry point (`dist/http-cli.js`, `npm start`) for running

@@ -10,7 +10,7 @@ export interface EditableMessage {
   toolCallId?: string;
 }
 
-export type StrategyName = 'dropOldest' | 'slidingWindow' | 'priority' | 'summarizeOldest';
+export type StrategyName = 'dropOldest' | 'slidingWindow' | 'priority' | 'summarizeOldest' | 'smartPriority';
 
 export interface AppState {
   messages: EditableMessage[];

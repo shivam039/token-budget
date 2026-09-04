@@ -1,6 +1,6 @@
 # Strategy selection
 
-All six strategies live in `strategies` (imported as
+All seven strategies live in `strategies` (imported as
 `import { strategies } from '@shivam.dixit/token-budget'`). Every one
 groups messages into atomic units first via the library's internal
 `toolCallId` grouping (see `SKILL.md`'s "Tool-call atomicity" section) —
@@ -161,3 +161,41 @@ source repository's [`examples/coding-agent-context`](https://github.com/shivam0
 framework-integration guides instead) does exactly this. Don't
 chain strategies that don't compose meaningfully just to seem thorough
 — each added strategy is another thing to test and explain.
+
+## `smartPriority(options?)`
+
+```ts
+interface SmartPriorityOptions {
+  autoPinSystem?: boolean;              // default true
+  autoPinLatestUser?: boolean;          // default true
+  toolPriority?: number;                // default -1
+  condense?: SummarizeOldestOptions;    // omit to stay synchronous
+}
+strategies.smartPriority()
+// or, folding older turns instead of dropping them:
+strategies.smartPriority({ condense: { summarize: mySummarizer, blockSize: 4 } })
+```
+
+A zero-config default that composes `pinned` + `priority` (and
+optionally `summarizeOldest`) into the three-tier policy most agents
+actually want, without hand-tagging every message: auto-pins every
+`system` message and the current (most recent) `user` message,
+defaults untagged tool-call/tool-result units to a priority below the
+implicit `0` of ordinary turns (so they're evicted first), and — when
+`condense` is set — folds older non-pinned turns into one synthetic
+message instead of dropping them. **Never overrides a `pinned`/
+`priority` you set explicitly** — it only fills in defaults for
+messages that didn't specify one. `sync` unless `condense` is set.
+
+**Use when** the host application's messages aren't already
+individually tagged with `pinned`/`priority`, and the "protect the
+essentials, drop tool noise first, condense the rest" default matches
+what the app actually wants — this is very often the fastest correct
+starting point for `SKILL.md` step 4 ("choose a strategy") before
+reaching for hand-tagged `priority()`.
+
+**Don't use when** the application needs precise, fully manual control
+over exactly what survives — e.g. a scenario `docs/architecture-patterns.md`'s
+priority-tier blueprints describe (a specific `priority: 5`/`priority: 1`
+split you're deliberately assigning yourself). Compose `priority()`
+directly in that case instead of relying on this strategy's defaults.

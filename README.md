@@ -351,6 +351,7 @@ rather than raw JSON.
 | Need continuity across a long session, not just a shorter one | `summarizeOldest` |
 | Simple, predictable trimming, no summarizer available | `dropOldest` (the default) |
 | A hard budget guarantee even if summarizing alone doesn't get there | `chain([summarizeOldest(...), dropOldest()])` |
+| Never drop the system prompt/current query, drop tool-call noise first, condense the rest — without hand-tagging every message | `smartPriority` |
 
 Full decision table with "why" and "when NOT to use" for each, plus how
 to write a custom strategy: [`docs/strategy-guide.md`](./docs/strategy-guide.md).

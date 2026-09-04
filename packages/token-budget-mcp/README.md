@@ -133,7 +133,7 @@ npx mcp-remote https://your-host/mcp --header "Authorization: Bearer <MCP_API_KE
 
 | Tool | Does |
 | --- | --- |
-| `create_budget` | Creates a session. `maxTokens` (or a recognized `model` name — see `MODEL_CONTEXT_WINDOWS` in the core package), `reserve`, `strategy` (`dropOldest` default, `slidingWindow`, or `priority`), `warningThreshold`. Returns `sessionId`. |
+| `create_budget` | Creates a session. `maxTokens` (or a recognized `model` name — see `MODEL_CONTEXT_WINDOWS` in the core package), `reserve`, `strategy` (`dropOldest` default, `slidingWindow`, `priority`, or `smartPriority`), `warningThreshold`. Returns `sessionId`. |
 | `add_message` | Appends a message to a session: `sessionId`, `role`, `content`, optional `pinned`/`priority`/`toolCallId`. |
 | `get_context` | Applies the session's strategy, returns the surviving messages, tokens used/remaining, and what was evicted. |
 | `explain` | The structured trace of the most recent `get_context` call — what was evicted/synthesized and why. |
@@ -151,8 +151,12 @@ persisted between restarts (`token-budget`'s own
 The `summarizeOldest` strategy takes an async summarizer callback you
 supply in your own code — there's no way for a single MCP tool call
 (plain JSON arguments in, plain JSON out) to *be* that callback. Use
-`dropOldest`, `slidingWindow`, or `priority` here; reach for
-`summarizeOldest` directly in TypeScript when you need it.
+`dropOldest`, `slidingWindow`, `priority`, or `smartPriority` here; reach
+for `summarizeOldest` directly in TypeScript when you need it.
+`smartPriority` itself is exposed without its own optional `condense`
+setting for the same reason — its auto-pin-system, auto-pin-current-
+query, and tool-call-drops-first behavior all work over MCP with no
+callback needed; condensation into a synthetic summary doesn't.
 
 ## A worked example
 
