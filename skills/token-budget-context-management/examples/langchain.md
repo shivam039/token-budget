@@ -73,7 +73,7 @@ memory abstraction.
   trimming/summarization step LangChain itself provides (e.g. its own
   trimming middleware) — running two eviction policies on the same
   conversation produces confusing, hard-to-explain results; pick one.
-  See [`docs/comparisons/token-budget-vs-langchain.md`](../../../docs/comparisons/token-budget-vs-langchain.md)
-  for how the two relate.
+  See [docs/comparisons/token-budget-vs-langchain.md](https://github.com/shivam039/token-budget/blob/main/docs/comparisons/token-budget-vs-langchain.md)
+  in the source repository for how the two relate.
 - Hand-converting `BaseMessage` tool-call fields instead of using the
   adapter, losing the `toolCallId` link in the process.
