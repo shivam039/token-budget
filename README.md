@@ -413,7 +413,7 @@ each package's own README for its API, usage, and known limitations.
 - [`docs/cookbook/`](./docs/cookbook) — single-problem guides (basic chat, pinned prompts, streaming, serialization); see also [`packages/token-budget/COOKBOOK.md`](./packages/token-budget/COOKBOOK.md) for the four full strategy recipes.
 - [`docs/migration/`](./docs/migration) — moving from manual `.shift()` trimming, a simple sliding window, LangChain's trimming, or your own custom context manager.
 - [`docs/why-token-budget.md`](./docs/why-token-budget.md) — every "why not just X" answer in one place.
-- [`datasets/context-management-bench`](./datasets/context-management-bench) — 24 realistic context-management scenarios (Hugging Face dataset spec), each with real evicted/retained results from actually running the library.
+- [`datasets/context-management-bench`](./datasets/context-management-bench) ([live on Hugging Face](https://huggingface.co/datasets/shivam039-dev/context-management-bench)) — 24 realistic context-management scenarios, each with real evicted/retained results from actually running the library.
 
 **Performance & comparisons:**
 

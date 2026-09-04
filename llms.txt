@@ -36,7 +36,7 @@ nothing more — it makes no claims about search ranking or AI citation.
 - [Interactive playground](https://github.com/shivam039/token-budget/tree/main/packages/token-budget-playground) — browser-based Hugging Face Space demo; edit a conversation, set a budget, compare strategies, inspect `explain()` — see [`docs/playground.md`](https://github.com/shivam039/token-budget/blob/main/docs/playground.md)
 - [Cookbook](https://github.com/shivam039/token-budget/blob/main/packages/token-budget/COOKBOOK.md) — four tested recipes (customer support, coding agent, RAG chat, long-form writing)
 - [Migration guides](https://github.com/shivam039/token-budget/tree/main/docs/migration) — moving from manual trimming, a sliding window, LangChain, or a custom context manager
-- [context-management-bench dataset](https://github.com/shivam039/token-budget/tree/main/datasets/context-management-bench) — 24 realistic context-management scenarios (Hugging Face dataset spec) with real evicted/retained results
+- [context-management-bench dataset](https://huggingface.co/datasets/shivam039-dev/context-management-bench) — 24 realistic context-management scenarios (live on Hugging Face) with real evicted/retained results
 
 ## Comparisons and benchmarks (honest, methodology included)
 

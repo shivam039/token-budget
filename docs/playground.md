@@ -147,11 +147,7 @@ secret the Space deploy uses, provided it has write access to datasets
 too. Missing either the repo or the token doesn't fail the workflow, it
 skips with a clear notice.
 
-**Status:** not yet created on Hugging Face — `datasets/context-management-bench`
-exists in this repository, ready to push, but no
-`huggingface.co/datasets/...` repo exists for it yet (checked directly via
-the Hub API, not assumed). Create it at the link above, then either push
-anything touching that directory or trigger the workflow manually.
+**Status:** live at [huggingface.co/datasets/shivam039-dev/context-management-bench](https://huggingface.co/datasets/shivam039-dev/context-management-bench), verified working — all 8 category files and the dataset card confirmed present via the Hugging Face Hub API, matching this repository's content.
 
 ## Related documentation
 
