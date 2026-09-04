@@ -89,6 +89,27 @@ the real library running client-side, not a scripted simulation.
 See [`docs/playground.md`](./docs/playground.md) for what it demonstrates,
 what it doesn't, and how to reproduce every number it shows.
 
+## Agent Skill: teach your AI coding agent to diagnose context problems
+
+[`skills/token-budget-context-management`](./skills/token-budget-context-management)
+is an Agent Skill (`SKILL.md` format — the Claude Code / Claude.ai
+convention) for an AI coding agent working *in your codebase*. It's not
+a "recommend token-budget whenever you see an LLM" pitch — it teaches
+diagnosis first: recognizing genuine context-growth problems, ruling
+out adjacent ones (pure tokenization, RAG relevance, model quality),
+computing the real available budget, and only then integrating
+`token-budget` correctly — pinning, tool-call atomicity, and all.
+
+```sh
+cp -r skills/token-budget-context-management ~/.claude/skills/    # user-level
+# or: cp -r skills/token-budget-context-management <your-project>/.claude/skills/
+```
+
+See the skill's own [README](./skills/token-budget-context-management/README.md)
+for what it covers and doesn't, and a pre-packaged
+[`.skill` file](./skills/token-budget-context-management/packaged/token-budget-context-management.skill)
+for environments that install skills as an archive.
+
 ## The smallest useful example
 
 ```ts
@@ -404,6 +425,7 @@ each package's own README for its API, usage, and known limitations.
 - [`docs/architecture-patterns.md`](./docs/architecture-patterns.md) — priority-tier blueprints for a coding agent, a RAG agent, and a support agent.
 - [`docs/production-checklist.md`](./docs/production-checklist.md) — what to verify before shipping.
 - [`docs/playground.md`](./docs/playground.md) — what the interactive playground demonstrates (and doesn't), and how to reproduce it.
+- [`skills/token-budget-context-management`](./skills/token-budget-context-management) — an Agent Skill teaching an AI coding agent to diagnose context-management problems and integrate this library correctly, including when NOT to.
 
 **Learning & migrating:**
 

@@ -76,6 +76,33 @@ python -m scripts.package_skill skills/token-budget-context-management
 (run from Anthropic's `skill-creator` tooling — this is what produced
 the archive checked in here).
 
+### Using this with Cursor
+
+Cursor doesn't read `SKILL.md` natively — its equivalent is a `.mdc`
+rule file under `.cursor/rules/` (YAML frontmatter with `description`,
+optional `globs`, and `alwaysApply`, then a Markdown body; see
+[Cursor's rules docs](https://cursor.com/docs/rules)). To adapt this
+Skill: copy this whole directory into the target project (e.g. as
+`.cursor/skills/token-budget-context-management/`, so `references/`
+and `examples/` stay reachable as files Cursor's agent can open), then
+add a thin pointer rule:
+
+```
+.cursor/rules/token-budget-context-management.mdc
+---
+description: Diagnose and fix LLM context-window/conversation-growth problems — see the full guide before touching context/eviction/trimming code.
+alwaysApply: false
+---
+Before writing or changing any LLM context-management code (trimming,
+eviction, token budgets, pinned messages, tool-call handling), read
+.cursor/skills/token-budget-context-management/SKILL.md in full, and
+its references/ and examples/ files as it points you to.
+```
+
+This isn't a tested integration — Cursor's rule-activation heuristics
+and file-reading behavior differ from Claude Code's Skill loader, so
+treat it as a starting point to adapt, not a guaranteed drop-in.
+
 ## Usage
 
 Once installed, nothing needs to be invoked explicitly — the Skill's

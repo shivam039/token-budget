@@ -524,8 +524,11 @@ Your LLM Agent Doesn't Need a Bigger Context Window, It Needs a Better One
 *(No body needed — HN link posts don't take one; the article speaks for
 itself. If a first comment feels right once it's live, something like:
 "Author here — happy to go into the mechanism/benchmark numbers in more
-depth if anyone's interested" works, matching the maker-comment tone
-used on the Show HN draft above.)*
+depth if anyone's interested. There's also a Claude Code Agent Skill in
+the repo (skills/token-budget-context-management) if you want an AI
+coding agent to diagnose this kind of problem for you, not just use the
+library directly." works, matching the maker-comment tone used on the
+Show HN draft above.)*
 
 ### Reddit — r/programming
 
@@ -547,7 +550,9 @@ Your LLM Agent Doesn't Need a Bigger Context Window, It Needs a Better One
 If you want a top comment adding context, something short like: "Wrote
 this up after hitting the same context-trimming bugs on a few different
 agent projects — mechanism + real benchmark numbers in the post, code's
-linked at the bottom." keeps it low-key rather than salesy.)*
+linked at the bottom. Also shipped it as an Agent Skill if you use
+Claude Code and want the diagnosis done for you." keeps it low-key
+rather than salesy.)*
 
 ### LinkedIn
 
@@ -565,7 +570,10 @@ quietly drops the system prompt or splits a tool call from its result.
 
 I wrote up the three specific ways that breaks, what an explicit token
 budget looks like instead, and the actual benchmark numbers (not just a
-claim) for what the extra machinery costs.
+claim) for what the extra machinery costs. There's also an interactive
+playground to see eviction happen live, and an Agent Skill so an AI
+coding agent can diagnose and fix this in your own codebase instead of
+just reading about it.
 
 Link in comments 👇
 

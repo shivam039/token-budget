@@ -221,7 +221,13 @@ a substantially larger conversation staying correct; the final message
 array still being valid input for the actual provider call. Use the
 host project's existing test framework — don't introduce a new one.
 Full scenario list: [`references/troubleshooting.md`](references/troubleshooting.md)
-and [`references/anti-patterns.md`](references/anti-patterns.md).
+and [`references/anti-patterns.md`](references/anti-patterns.md). For
+realistic fixtures instead of writing conversations by hand, the
+repository's [`datasets/context-management-bench`](../../datasets/context-management-bench)
+has 24 pre-built scenarios (coding agent, pinned instruction, tool-call
+atomicity, and more) with the real evicted/retained message ids already
+computed by the library — useful as known-good expected output when
+testing a similar policy.
 
 ### 9. Explain the result instead of guessing
 
