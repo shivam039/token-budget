@@ -52,3 +52,7 @@
 - **Do not block** normal development (refactors, doc changes, additive API).
 - No LLM calls. Fully deterministic.
 - Fast, predictable, understandable.
+
+## Recent Updates
+- Integrity checks in CI: `check-integrity.js` skips redundant checks if `GUARDRAILS_SKIP_INTEGRITY=1` is set (which is configured in `.github/workflows/ci.yml`). `npm run test` is entirely removed from integrity checks because testing is thoroughly covered elsewhere in the suite. Unit tests do not re-enter the full suite.
+- Base Ref Resolution: `check-public-api.js` uses explicit references via `GITHUB_BASE_REF` or `GUARDRAILS_BASE_REF` to securely verify API changes in shallow clones. Missing base references fallback to a warning, avoiding CI failure solely due to a missing base.

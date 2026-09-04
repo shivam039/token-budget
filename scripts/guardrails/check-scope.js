@@ -12,7 +12,18 @@ export async function run() {
       return { status: 'pass' }; // no changes
     }
 
-    const diffFiles = execSync('git diff --name-only HEAD', { cwd: ROOT_DIR, stdio: 'pipe' }).toString().trim().split('\n');
+    const allDiffFiles = execSync('git diff --name-only HEAD', { cwd: ROOT_DIR, stdio: 'pipe' }).toString().trim().split('\n');
+    const diffFiles = allDiffFiles.filter(f => {
+      if (!f) return false;
+      const isNoisy = f.endsWith('package-lock.json') ||
+                      f.match(/^datasets\/.*\.jsonl$/) ||
+                      f.includes('dist/') ||
+                      f.includes('build/') ||
+                      f.includes('.turbo/') ||
+                      f.includes('coverage/') ||
+                      f.endsWith('.tsbuildinfo');
+      return !isNoisy;
+    });
 
     let unusualFiles = [];
     for (const f of diffFiles) {

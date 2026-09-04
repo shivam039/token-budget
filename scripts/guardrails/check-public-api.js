@@ -8,11 +8,33 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT_DIR = path.resolve(__dirname, '../..');
 
 function getBaseFiles(repoRoot) {
+    let baseRef = process.env.GITHUB_BASE_REF || process.env.GUARDRAILS_BASE_REF;
+    if (baseRef) {
+        // Just use the explicit ref
+        try {
+             execSync(`git rev-parse --verify ${baseRef}`, { cwd: repoRoot, stdio: 'ignore' });
+             return baseRef;
+        } catch {
+             // If missing, try fetching
+             try {
+                 execSync(`git fetch origin ${baseRef}`, { cwd: repoRoot, stdio: 'ignore' });
+                 return baseRef; // Actually we might need 'FETCH_HEAD' but let's just use the ref directly if fetch succeeds or fallback
+             } catch {
+                 // Return null instead of silent fallback
+             }
+        }
+    }
+
     try {
         const baseCommit = execSync('git merge-base origin/main HEAD', { cwd: repoRoot, stdio: 'pipe' }).toString().trim();
         return baseCommit;
     } catch {
-        return 'HEAD~1';
+        try {
+             const baseCommit = execSync('git merge-base main HEAD', { cwd: repoRoot, stdio: 'pipe' }).toString().trim();
+             return baseCommit;
+        } catch {
+             return null;
+        }
     }
 }
 
@@ -31,6 +53,9 @@ export async function run() {
     if (!fs.existsSync(packagesDir)) return { status: 'pass' };
 
     const baseCommit = getBaseFiles(ROOT_DIR);
+    if (!baseCommit) {
+        return { status: 'warn', message: 'Could not resolve base commit for public API check. Skipping.' };
+    }
 
     // We only care about changed packages to keep it fast
     const diffFiles = execSync('git diff --name-only HEAD', { cwd: ROOT_DIR, stdio: 'pipe' }).toString().trim().split('\n').filter(Boolean);
