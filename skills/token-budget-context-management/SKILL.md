@@ -53,9 +53,14 @@ Diagnose first. Say so explicitly and stop here when:
 - **The conversation is small and bounded.** A five-turn support widget
   that resets every session has no context-management problem to solve.
 - **The actual ask is tokenization, not context management.** "How many
-  tokens is this string?" needs a tokenizer (the built-in
-  `createEstimateTokenizer`, or `token-budget-tiktoken` for exact
-  counts) — not eviction policy. See
+  tokens is this string?" needs a tokenizer, not an eviction policy —
+  and if the app isn't already using `token-budget` for anything else,
+  a standalone tokenizer (`tiktoken`/`js-tiktoken`/`gpt-tokenizer`, or
+  simply reading the `usage` field a provider's response already
+  returns) is the right-sized answer, not a reason to add this package.
+  `token-budget`'s own tokenizer pieces (`createEstimateTokenizer`,
+  `token-budget-tiktoken`) only make sense once there's an actual
+  eviction/budget problem to solve alongside the counting. See
   [`docs/why-token-budget.md`](../../docs/why-token-budget.md#why-not-just-use-a-tokenizer).
 - **A one-time truncation is genuinely sufficient** and the app will
   never need a second policy decision (e.g., a script that summarizes

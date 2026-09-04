@@ -154,7 +154,9 @@ is synchronous.
 
 **Use when** one strategy alone doesn't fully express the policy — most
 commonly a summarization pass that folds old context, followed by a
-`priority()` backstop for anything summarization left over budget (the
-`examples/coding-agent-context` example in this repo does exactly this).
-Don't chain strategies that don't compose meaningfully just to seem
-thorough — each added strategy is another thing to test and explain.
+`priority()` backstop for anything summarization left over budget. The
+repository's own [`examples/coding-agent-context`](../../../examples/coding-agent-context)
+(at the repo root — not this Skill's own `examples/` directory, which
+holds framework-integration guides instead) does exactly this. Don't
+chain strategies that don't compose meaningfully just to seem thorough
+— each added strategy is another thing to test and explain.
