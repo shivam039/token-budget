@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "checks": {
+    "integrity": true,
+    "secrets": true,
+    "scope": true,
+    "public_api": true,
+    "skill_integrity": true,
+    "skill_trigger": true,
+    "dataset": true,
+    "docs": true
+  }
+}
