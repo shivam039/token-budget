@@ -1,6 +1,7 @@
 {
   "name": "token-budget-monorepo",
   "private": true,
+  "type": "module",
   "description": "Monorepo for token-budget core and its adapter/tokenizer packages.",
   "workspaces": [
     "packages/*",

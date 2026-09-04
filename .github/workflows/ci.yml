@@ -20,7 +20,19 @@ jobs:
       - run: npm ci
       - run: npm run build
       - run: npm run typecheck
-      - run: npm run test:coverage
-      - run: npm run guardrails
+      # Coverage instrumentation only needs to run once -- it's a
+      # reporting concern, not a correctness check, and it's the same
+      # report regardless of which Node version ran it. Every matrix
+      # leg still runs the full test suite via plain `npm run test`.
+      - if: matrix.node-version == 22
+        run: npm run test:coverage
+      - if: matrix.node-version != 22
+        run: npm run test
+      # Guardrails checks (secrets, scope, skill/dataset/docs integrity)
+      # inspect files and git diffs -- they don't depend on the Node
+      # runtime at all, so running them on every matrix leg is pure
+      # redundant CI time with zero additional signal.
+      - if: matrix.node-version == 22
+        run: npm run guardrails
         env:
           GUARDRAILS_SKIP_INTEGRITY: 1
