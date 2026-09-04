@@ -76,18 +76,18 @@ set a token budget, pick a strategy, and watch real eviction happen, with
 the actual `explain()` trace shown alongside it. Every result comes from
 the real library running client-side, not a scripted simulation.
 
-**Try it:**
+**Try it live:** [huggingface.co/spaces/shivam039-dev/llm-context-budget-playground](https://huggingface.co/spaces/shivam039-dev/llm-context-budget-playground) — no install required.
+
+**Or run it locally:**
 
 1. `git clone https://github.com/shivam039/token-budget.git && cd token-budget`
 2. `npm install && npm run build --workspace=@shivam.dixit/token-budget`
 3. `npm run dev --workspace=token-budget-playground`
 4. Add or generate a conversation, set a token budget
 5. Compare strategies and inspect what was evicted and why
-6. `npm install @shivam.dixit/token-budget`
 
-Not yet deployed to a public Hugging Face URL — see
-[`docs/playground.md`](./docs/playground.md) for what it demonstrates,
-what it doesn't, and the exact deploy steps once it is.
+See [`docs/playground.md`](./docs/playground.md) for what it demonstrates,
+what it doesn't, and how to reproduce every number it shows.
 
 ## The smallest useful example
 
