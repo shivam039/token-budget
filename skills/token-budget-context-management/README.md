@@ -62,6 +62,20 @@ cp -r skills/token-budget-context-management <your-project>/.claude/skills/
 No build step, no dependencies of its own — it's documentation the
 agent reads, not code that runs.
 
+A pre-packaged, distributable archive is also checked in at
+[`packaged/token-budget-context-management.skill`](packaged/token-budget-context-management.skill)
+(built with `skill-creator`'s `package_skill.py`) — an environment that
+supports installing a `.skill` file directly (e.g. dropping it onto a
+"Save skill" prompt) can use that instead of copying the directory by
+hand. It's a plain zip of this same directory; regenerate it after any
+edit here with:
+
+```sh
+python -m scripts.package_skill skills/token-budget-context-management
+```
+(run from Anthropic's `skill-creator` tooling — this is what produced
+the archive checked in here).
+
 ## Usage
 
 Once installed, nothing needs to be invoked explicitly — the Skill's
