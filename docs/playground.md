@@ -132,6 +132,27 @@ Space itself (the `huggingface.co/spaces/...` repo) has to already exist
 under a real Hugging Face account first; that one-time creation step
 isn't something a repository change can do on its own.
 
+**Status:** live at [huggingface.co/spaces/shivam039-dev/llm-context-budget-playground](https://huggingface.co/spaces/shivam039-dev/llm-context-budget-playground), verified working (real content, not the default placeholder, confirmed directly via the Hugging Face Hub API).
+
+## Deploying / updating the dataset
+
+Same pattern, separate workflow:
+[`.github/workflows/deploy-dataset.yml`](../.github/workflows/deploy-dataset.yml)
+pushes [`datasets/context-management-bench`](../datasets/context-management-bench)
+to a Hugging Face dataset repo on every push to `main` that touches it (or
+on demand). It needs the dataset repo to exist first — create it once at
+[huggingface.co/new-dataset](https://huggingface.co/new-dataset) (name
+`context-management-bench`, license `mit`) — reusing the same `HF_TOKEN`
+secret the Space deploy uses, provided it has write access to datasets
+too. Missing either the repo or the token doesn't fail the workflow, it
+skips with a clear notice.
+
+**Status:** not yet created on Hugging Face — `datasets/context-management-bench`
+exists in this repository, ready to push, but no
+`huggingface.co/datasets/...` repo exists for it yet (checked directly via
+the Hub API, not assumed). Create it at the link above, then either push
+anything touching that directory or trigger the workflow manually.
+
 ## Related documentation
 
 - [`docs/API.md`](./API.md) — every API the playground calls

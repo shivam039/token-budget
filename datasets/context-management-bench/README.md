@@ -102,6 +102,18 @@ npm run generate:dataset
 
 This runs `scripts/generate-context-dataset.ts`, which imports the same deterministic generator (`scripts/lib/generateConversation.ts`) used by the [`packages/token-budget-playground`](https://github.com/shivam039/token-budget/tree/main/packages/token-budget-playground) Hugging Face Space's own "Generate long conversation" feature — one implementation, not two.
 
+## Publishing updates to Hugging Face
+
+[`.github/workflows/deploy-dataset.yml`](https://github.com/shivam039/token-budget/blob/main/.github/workflows/deploy-dataset.yml)
+pushes this directory to the Hugging Face dataset repo automatically on
+every push to `main` that touches it (or on demand via the Actions tab).
+It needs the dataset repo to already exist on Hugging Face — create it
+once at [huggingface.co/new-dataset](https://huggingface.co/new-dataset)
+(name: `context-management-bench`, license: `mit`) — and the same
+`HF_TOKEN` repository secret the playground's deploy workflow uses, with
+write access to datasets. Missing either one doesn't fail the workflow;
+it prints setup instructions and skips instead.
+
 ## License
 
 MIT — matching the source repository's [`LICENSE`](https://github.com/shivam039/token-budget/blob/main/LICENSE). All content is synthetically generated; no real user conversations, credentials, or personal data are included.

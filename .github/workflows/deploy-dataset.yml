@@ -1,0 +1,72 @@
+name: Deploy Dataset to Hugging Face
+
+# Pushes datasets/context-management-bench (already-generated, git-tracked
+# content — see scripts/generate-context-dataset.ts) to a Hugging Face
+# dataset repo, on every push to main touching that directory (or on
+# demand via workflow_dispatch).
+#
+# Requires two one-time things only the repo/dataset owner can do:
+# 1. Create the dataset repo itself at https://huggingface.co/new-dataset
+#    (name: context-management-bench, license: mit) -- no tool available
+#    to any automation in this repo can create a Hugging Face repo.
+# 2. The same HF_TOKEN repo secret the playground deploy uses (see
+#    deploy-playground.yml), with write access to datasets too.
+#
+# Neither missing thing fails this workflow: it checks for both and
+# prints clear setup instructions instead of a red run.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'datasets/context-management-bench/**'
+      - 'scripts/generate-context-dataset.ts'
+      - 'scripts/lib/generateConversation.ts'
+      - '.github/workflows/deploy-dataset.yml'
+  workflow_dispatch:
+
+env:
+  HF_DATASET: shivam039-dev/context-management-bench
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check for HF_TOKEN
+        id: check_token
+        run: |
+          if [ -z "${{ secrets.HF_TOKEN }}" ]; then
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::HF_TOKEN repo secret is not set — skipping dataset deploy. See docs/playground.md for setup."
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Check the dataset repo exists on Hugging Face
+        id: check_repo
+        if: steps.check_token.outputs.ready == 'true'
+        run: |
+          if git ls-remote "https://shivam039-dev:${{ secrets.HF_TOKEN }}@huggingface.co/datasets/${HF_DATASET}" &>/dev/null; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::The dataset repo huggingface.co/datasets/${HF_DATASET} doesn't exist yet (or HF_TOKEN lacks access to it) — skipping deploy. Create it at https://huggingface.co/new-dataset (name: context-management-bench, license: mit), then re-run this workflow (Actions tab -> Deploy Dataset to Hugging Face -> Run workflow)."
+          fi
+
+      - name: Deploy to Hugging Face dataset repo
+        if: steps.check_token.outputs.ready == 'true' && steps.check_repo.outputs.exists == 'true'
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          set -euo pipefail
+          cd datasets/context-management-bench
+          git init -q
+          git checkout -q -b main
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -q -m "Update dataset from ${{ github.repository }}@${GITHUB_SHA::7}"
+          git push --force "https://shivam039-dev:${HF_TOKEN}@huggingface.co/datasets/${HF_DATASET}" main:main
+          echo "Deployed to https://huggingface.co/datasets/${HF_DATASET}"
