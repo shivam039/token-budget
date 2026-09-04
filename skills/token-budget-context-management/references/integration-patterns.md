@@ -64,7 +64,8 @@ argument). For write-as-you-go persistence, use the constructor's
 `onPersist?: (state) => void | Promise<void>` hook (fired after every
 buffer mutation) with `persistDebounceMs` if writes are too frequent —
 don't build a separate change-detection layer to decide when to persist.
-See [`docs/cookbook/serialization.md`](../../../docs/cookbook/serialization.md).
+See [docs/cookbook/serialization.md](https://github.com/shivam039/token-budget/blob/main/docs/cookbook/serialization.md)
+in the source repository.
 
 ## Streaming
 

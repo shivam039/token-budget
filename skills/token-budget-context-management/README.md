@@ -1,8 +1,9 @@
 # token-budget-context-management (Agent Skill)
 
-An [Agent Skill](https://github.com/shivam039/token-budget) that teaches
-an AI coding agent to **diagnose LLM context-management problems and fix
-them correctly** — using [`@shivam.dixit/token-budget`](https://www.npmjs.com/package/@shivam.dixit/token-budget)
+An Agent Skill, from the [`token-budget`](https://github.com/shivam039/token-budget)
+project, that teaches an AI coding agent to **diagnose LLM
+context-management problems and fix them correctly** — using
+[`@shivam.dixit/token-budget`](https://www.npmjs.com/package/@shivam.dixit/token-budget)
 when it's the right tool, and explicitly saying so when it isn't.
 
 This Skill is not a product pitch packaged as documentation. Its job is
@@ -39,25 +40,37 @@ token-budget."
 
 ## Supported agent ecosystem
 
-Targets the **Agent Skills / `SKILL.md` convention** used by Claude Code
-and Claude.ai (YAML frontmatter with `name`/`description`, a Markdown
-body, and progressive-disclosure `references/`/`examples/` directories
-loaded on demand). This is the same format documented and produced by
-Anthropic's `skill-creator` tooling, so it's portable to any environment
-that reads that convention, and packageable into a distributable
-`.skill` file with `skill-creator`'s `package_skill.py`.
+Targets the **[Agent Skills specification](https://agentskills.io/specification)**
+— a `SKILL.md` file with YAML frontmatter (`name`/`description` are
+the only required fields; this Skill uses just those two) and a
+Markdown body, plus `references/` for documentation loaded on demand
+(this Skill also uses its own `examples/` directory for
+framework-integration guides — not a spec-named convention, just a
+clearer name for that particular content than `references/` would be).
+Claude Code, Claude.ai, and Cursor all read this format natively; it's
+portable to any other environment that does the same, and packageable
+into a distributable `.skill` file with Anthropic's `skill-creator`
+tooling's `package_skill.py`.
 
 ## Installation
 
-Copy this directory into wherever the target agent looks for skills:
+Copy this directory into wherever the target agent looks for skills.
+Claude Code, Claude.ai, and Cursor all read the same `SKILL.md`
+convention, and Cursor additionally discovers `.claude/skills/` for
+compatibility — so a single copy under `.claude/skills/` works for
+both without maintaining two installs:
 
 ```sh
-# Claude Code / Claude.ai — user-level, available in every project:
+# User-level, available in every project (Claude Code, Claude.ai, and Cursor):
 cp -r skills/token-budget-context-management ~/.claude/skills/
 
 # Or project-level, active only inside one repo:
 cp -r skills/token-budget-context-management <your-project>/.claude/skills/
 ```
+
+If you'd rather use Cursor's own directory instead of relying on its
+`.claude/skills/` compatibility path, the same copy works there too —
+see "Using this with Cursor" below.
 
 No build step, no dependencies of its own — it's documentation the
 agent reads, not code that runs.
@@ -78,30 +91,25 @@ the archive checked in here).
 
 ### Using this with Cursor
 
-Cursor doesn't read `SKILL.md` natively — its equivalent is a `.mdc`
-rule file under `.cursor/rules/` (YAML frontmatter with `description`,
-optional `globs`, and `alwaysApply`, then a Markdown body; see
-[Cursor's rules docs](https://cursor.com/docs/rules)). To adapt this
-Skill: copy this whole directory into the target project (e.g. as
-`.cursor/skills/token-budget-context-management/`, so `references/`
-and `examples/` stay reachable as files Cursor's agent can open), then
-add a thin pointer rule:
+Cursor supports Agent Skills natively (`SKILL.md`, same convention as
+Claude Code) — no conversion into a `.cursor/rules/*.mdc` rule is
+needed. Cursor scans, in order of scope: `.cursor/skills/` (project),
+`~/.cursor/skills/` (user-level, every project on the machine), and
+`.claude/skills/` (project) / `~/.claude/skills/` (user-level) for
+compatibility with Claude Code installs.
 
-```
-.cursor/rules/token-budget-context-management.mdc
----
-description: Diagnose and fix LLM context-window/conversation-growth problems — see the full guide before touching context/eviction/trimming code.
-alwaysApply: false
----
-Before writing or changing any LLM context-management code (trimming,
-eviction, token budgets, pinned messages, tool-call handling), read
-.cursor/skills/token-budget-context-management/SKILL.md in full, and
-its references/ and examples/ files as it points you to.
+```sh
+# Project-level, Cursor-specific location:
+cp -r skills/token-budget-context-management <your-project>/.cursor/skills/
+
+# User-level, every project on this machine:
+cp -r skills/token-budget-context-management ~/.cursor/skills/
 ```
 
-This isn't a tested integration — Cursor's rule-activation heuristics
-and file-reading behavior differ from Claude Code's Skill loader, so
-treat it as a starting point to adapt, not a guaranteed drop-in.
+If the project (or your home directory) already has this Skill under
+`.claude/skills/` — see "Installation" above — Cursor picks it up from
+there automatically; you don't need a second copy under `.cursor/skills/`
+unless you specifically want it scoped to Cursor only.
 
 ## Usage
 
@@ -144,17 +152,20 @@ package anyway.
 skills/token-budget-context-management/
 ├── SKILL.md                          — activation logic, diagnostic workflow, decision tree
 ├── README.md                         — this file
+├── LICENSE.txt                       — MIT, copied from the source repository
 ├── references/
 │   ├── strategy-selection.md         — all 6 strategies, config, trade-offs
 │   ├── integration-patterns.md       — the context-boundary architecture, persistence, streaming
 │   ├── anti-patterns.md              — DIY patterns that look fine and fail, and why
 │   ├── migration-from-diy.md         — converting an existing manual implementation
 │   └── troubleshooting.md            — diagnosing four common post-integration symptoms
-└── examples/
-    ├── openai.md
-    ├── anthropic.md
-    ├── vercel-ai.md
-    └── langchain.md
+├── examples/
+│   ├── openai.md
+│   ├── anthropic.md
+│   ├── vercel-ai.md
+│   └── langchain.md
+└── packaged/
+    └── token-budget-context-management.skill  — pre-built distributable archive
 ```
 
 `SKILL.md` stays short and is always loaded when the Skill activates;
@@ -184,3 +195,9 @@ against the main repository if you find one.
   mechanically without reading the host application's actual code — the
   diagnostic steps in `SKILL.md` assume the agent will genuinely inspect
   the app, not pattern-match on keywords alone.
+
+## License
+
+MIT — see [`LICENSE.txt`](LICENSE.txt) in this directory, copied from
+the source repository's own [`LICENSE`](https://github.com/shivam039/token-budget/blob/main/LICENSE)
+so this Skill folder is self-contained if copied elsewhere.

@@ -1,13 +1,14 @@
 ---
 name: token-budget-context-management
 description: Diagnoses and fixes LLM context-window/conversation-growth problems — hard-coded message slicing (messages.slice(-20)), context-limit errors, rising token costs, or broken tool-call trimming — then chooses the right fix. Use whenever a user reports an agent "hitting the context window," a conversation "growing indefinitely," needing to "trim old messages," "keep the system prompt while removing history," or "preserve tool calls when trimming" — even without naming token-budget. Diagnoses first (is this really a context-size problem, and is the existing solution already adequate?) and recommends @shivam.dixit/token-budget only when it's the right fix, with explicit guidance on when NOT to (tiny conversations, pure tokenization needs, RAG-quality issues, model-quality issues). Do not use for pure token-counting questions or problems unrelated to context size (retrieval relevance, prompt wording, model choice).
+license: MIT. LICENSE.txt has complete terms.
 ---
 
 # token-budget: context-management diagnosis and integration
 
-Skill format: **Agent Skills / `SKILL.md`** (the Claude Code / Claude.ai
-convention — YAML frontmatter + progressive-disclosure `references/`).
-Portable to any agent that reads this convention.
+Skill format: **[Agent Skills](https://agentskills.io/specification)**
+(`SKILL.md`, YAML frontmatter + progressive-disclosure `references/`).
+Read natively by Claude Code, Claude.ai, and Cursor.
 
 Validated against **`@shivam.dixit/token-budget` v0.1.5**
 ([GitHub](https://github.com/shivam039/token-budget) ·
@@ -61,7 +62,8 @@ Diagnose first. Say so explicitly and stop here when:
   `token-budget`'s own tokenizer pieces (`createEstimateTokenizer`,
   `token-budget-tiktoken`) only make sense once there's an actual
   eviction/budget problem to solve alongside the counting. See
-  [`docs/why-token-budget.md`](../../docs/why-token-budget.md#why-not-just-use-a-tokenizer).
+  [docs/why-token-budget.md](https://github.com/shivam039/token-budget/blob/main/docs/why-token-budget.md#why-not-just-use-a-tokenizer)
+  in the source repository.
 - **A one-time truncation is genuinely sufficient** and the app will
   never need a second policy decision (e.g., a script that summarizes
   one fixed document once).
@@ -128,7 +130,8 @@ recompute one from scratch. If the model is unknown or not in
 `MODEL_CONTEXT_WINDOWS`, do not invent a number: pass `maxTokens`
 explicitly, or ask. `TokenBudget`'s constructor itself refuses to guess —
 it throws if neither `maxTokens` nor a recognized `model` is given.
-Full precedence rules: [`docs/model-budgets.md`](../../docs/model-budgets.md).
+Full precedence rules: [docs/model-budgets.md](https://github.com/shivam039/token-budget/blob/main/docs/model-budgets.md)
+in the source repository.
 
 ### 3. Identify protected context and tool-call groups
 
@@ -223,7 +226,7 @@ host project's existing test framework — don't introduce a new one.
 Full scenario list: [`references/troubleshooting.md`](references/troubleshooting.md)
 and [`references/anti-patterns.md`](references/anti-patterns.md). For
 realistic fixtures instead of writing conversations by hand, the
-repository's [`datasets/context-management-bench`](../../datasets/context-management-bench)
+[context-management-bench dataset](https://huggingface.co/datasets/shivam039-dev/context-management-bench)
 has 24 pre-built scenarios (coding agent, pinned instruction, tool-call
 atomicity, and more) with the real evicted/retained message ids already
 computed by the library — useful as known-good expected output when
@@ -236,7 +239,8 @@ evicted," or "why did context exceed budget" — call `budget.explain()`
 (returns the `ExplainReport` from the most recent `getContext()`/
 `getContextSync()` call) and read its `steps[].evicted[].reason` strings,
 rather than reasoning about it from the strategy source. Details:
-[`docs/explainability.md`](../../docs/explainability.md).
+[docs/explainability.md](https://github.com/shivam039/token-budget/blob/main/docs/explainability.md)
+in the source repository.
 
 ## Tool-call atomicity — read this before writing any custom grouping code
 

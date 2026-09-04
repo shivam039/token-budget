@@ -63,9 +63,10 @@ lowest-priority-oldest units first. `name: 'priority'`, synchronous.
 **Use when** the application already has, or can derive, a meaningful
 per-message importance signal — the current task, the file just edited,
 a customer's active complaint vs. small talk from ten turns ago. See
-[`docs/architecture-patterns.md`](../../../docs/architecture-patterns.md)'s
-coding-agent blueprint for a worked example (`priority: 5` for the
-current file, `priority: 1` for a stale file read from earlier).
+[docs/architecture-patterns.md](https://github.com/shivam039/token-budget/blob/main/docs/architecture-patterns.md)
+in the source repository for a worked coding-agent blueprint
+(`priority: 5` for the current file, `priority: 1` for a stale file
+read from earlier).
 
 **Don't use when** there's no real importance signal to assign — an
 arbitrary priority number is worse than no policy at all, because it
@@ -155,8 +156,8 @@ is synchronous.
 **Use when** one strategy alone doesn't fully express the policy — most
 commonly a summarization pass that folds old context, followed by a
 `priority()` backstop for anything summarization left over budget. The
-repository's own [`examples/coding-agent-context`](../../../examples/coding-agent-context)
-(at the repo root — not this Skill's own `examples/` directory, which
-holds framework-integration guides instead) does exactly this. Don't
+source repository's [`examples/coding-agent-context`](https://github.com/shivam039/token-budget/tree/main/examples/coding-agent-context)
+(not this Skill's own `examples/` directory, which holds
+framework-integration guides instead) does exactly this. Don't
 chain strategies that don't compose meaningfully just to seem thorough
 — each added strategy is another thing to test and explain.
