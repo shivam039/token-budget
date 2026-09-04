@@ -66,19 +66,31 @@ npm run build --workspace=token-budget-playground   # outputs packages/token-bud
 
 ## Deploying this Space
 
-This Space uses the `static` SDK — Hugging Face serves whatever's at `app_file` (`dist/index.html`) directly, no server process. To (re)deploy:
+This Space uses the `static` SDK — Hugging Face serves whatever's at `app_file` (`dist/index.html`) directly, no server process. No secrets or environment variables are required by the *playground itself* — it makes no network calls and needs no API key at runtime.
+
+### Automatic (recommended): GitHub Actions
+
+[`.github/workflows/deploy-playground.yml`](../../.github/workflows/deploy-playground.yml)
+builds this package and pushes `dist/` to the Space on every push to
+`main` that touches the playground (or on demand via the Actions tab's
+"Run workflow" button). One-time setup:
+
+1. Generate a Hugging Face access token with write access to the target Space at [huggingface.co/settings/tokens](https://huggingface.co/settings/tokens).
+2. In the GitHub repo: Settings → Secrets and variables → Actions → New repository secret → name it `HF_TOKEN`, paste the token.
+3. Push to `main` (or trigger the workflow manually) — it deploys to `huggingface.co/spaces/shivam039-dev/llm-context-budget-playground`. Change the `HF_SPACE` env var in the workflow file if deploying to a different Space.
+
+Without the secret, the workflow still runs and passes — it just skips the deploy step with a clear notice instead of failing.
+
+### Manual
 
 ```sh
 npm run build --workspace=token-budget-playground
-# then push the contents of packages/token-budget-playground/dist/
-# as the Space repository's file tree, e.g.:
+cp packages/token-budget-playground/README.md packages/token-budget-playground/dist/README.md   # carries the Space's sdk/license front matter
 cd packages/token-budget-playground/dist
 git init && git remote add space https://huggingface.co/spaces/<your-username>/llm-context-budget-playground
 git add -A && git commit -m "Deploy playground build"
 git push --force space main
 ```
-
-No secrets or environment variables are required — the playground makes no network calls and needs no API key.
 
 ## License
 

@@ -109,11 +109,28 @@ for the full schema, intended use, and limitations.
 
 ## Deploying / updating the live Space
 
-See the "Deploying this Space" section in
-[`packages/token-budget-playground/README.md`](../packages/token-budget-playground/README.md)
-for the exact build and push commands. Publishing to `huggingface.co`
-requires a real Hugging Face account — that step isn't something a
-repository change can do on its own.
+Two ways, both documented in the "Deploying this Space" section of
+[`packages/token-budget-playground/README.md`](../packages/token-budget-playground/README.md):
+
+- **Automatic, via GitHub Actions** — [`.github/workflows/deploy-playground.yml`](../.github/workflows/deploy-playground.yml)
+  builds the playground and pushes it to the Space on every push to
+  `main` that touches the playground, the core package, or the shared
+  generator (or on demand via `workflow_dispatch`). One-time setup: add
+  a repository secret named `HF_TOKEN` — a Hugging Face access token
+  with write access to the target Space, generated at
+  [huggingface.co/settings/tokens](https://huggingface.co/settings/tokens)
+  (GitHub → repo Settings → Secrets and variables → Actions → New
+  repository secret). Without that secret the workflow still runs
+  successfully, it just skips the deploy step with a clear notice
+  instead of failing — safe to merge before the secret exists.
+- **Manual**, if you'd rather not wire up CI for this: build locally and
+  push the `dist/` output yourself — the exact commands are in the
+  Space's own README.
+
+Either way, this repository can build and push the *content* — the
+Space itself (the `huggingface.co/spaces/...` repo) has to already exist
+under a real Hugging Face account first; that one-time creation step
+isn't something a repository change can do on its own.
 
 ## Related documentation
 
