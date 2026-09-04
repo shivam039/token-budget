@@ -12,7 +12,8 @@
     "test": "npm run test --workspaces --if-present",
     "test:coverage": "npm run test:coverage --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
-    "bench": "npm run bench --workspace=token-budget-bench"
+    "bench": "npm run bench --workspace=token-budget-bench",
+    "generate:dataset": "tsx scripts/generate-context-dataset.ts"
   },
   "license": "MIT"
 }

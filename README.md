@@ -67,6 +67,28 @@ a memory platform, more provider adapters than real usage justifies, ...).
 npm install @shivam.dixit/token-budget
 ```
 
+## Interactive playground
+
+Want to see context management in action before installing anything?
+[`packages/token-budget-playground`](./packages/token-budget-playground) is
+a browser-based demo, built as a Hugging Face Space — edit a conversation,
+set a token budget, pick a strategy, and watch real eviction happen, with
+the actual `explain()` trace shown alongside it. Every result comes from
+the real library running client-side, not a scripted simulation.
+
+**Try it:**
+
+1. `git clone https://github.com/shivam039/token-budget.git && cd token-budget`
+2. `npm install && npm run build --workspace=@shivam.dixit/token-budget`
+3. `npm run dev --workspace=token-budget-playground`
+4. Add or generate a conversation, set a token budget
+5. Compare strategies and inspect what was evicted and why
+6. `npm install @shivam.dixit/token-budget`
+
+Not yet deployed to a public Hugging Face URL — see
+[`docs/playground.md`](./docs/playground.md) for what it demonstrates,
+what it doesn't, and the exact deploy steps once it is.
+
 ## The smallest useful example
 
 ```ts
@@ -355,6 +377,7 @@ against every provider, and never evicts anything you've marked `pinned`.
 | [`packages/token-budget-embeddings`](./packages/token-budget-embeddings) | Reference cosine-similarity `Scorer` for the `semanticRelevance` strategy. |
 | [`packages/token-budget-mcp`](./packages/token-budget-mcp) | MCP server exposing token-budget as callable tools, for testing and driving it from Claude Code/Desktop or any other MCP client. |
 | [`packages/token-budget-devtools`](./packages/token-budget-devtools) | Local Vite app for visually inspecting a `serialize()` dump. Not published to npm. |
+| [`packages/token-budget-playground`](./packages/token-budget-playground) | Interactive Hugging Face Space demo — edit a conversation, set a budget, compare strategies, inspect `explain()`. Not published to npm. |
 | [`packages/token-budget-py`](./packages/token-budget-py) | Python port. **Work in progress** — partial API, see its own README for exact scope. |
 
 Each package is independently versioned and independently installable —
@@ -380,6 +403,7 @@ each package's own README for its API, usage, and known limitations.
 - [`docs/model-budgets.md`](./docs/model-budgets.md) — the `maxTokens`/`model` precedence, exactly.
 - [`docs/architecture-patterns.md`](./docs/architecture-patterns.md) — priority-tier blueprints for a coding agent, a RAG agent, and a support agent.
 - [`docs/production-checklist.md`](./docs/production-checklist.md) — what to verify before shipping.
+- [`docs/playground.md`](./docs/playground.md) — what the interactive playground demonstrates (and doesn't), and how to reproduce it.
 
 **Learning & migrating:**
 
@@ -389,6 +413,7 @@ each package's own README for its API, usage, and known limitations.
 - [`docs/cookbook/`](./docs/cookbook) — single-problem guides (basic chat, pinned prompts, streaming, serialization); see also [`packages/token-budget/COOKBOOK.md`](./packages/token-budget/COOKBOOK.md) for the four full strategy recipes.
 - [`docs/migration/`](./docs/migration) — moving from manual `.shift()` trimming, a simple sliding window, LangChain's trimming, or your own custom context manager.
 - [`docs/why-token-budget.md`](./docs/why-token-budget.md) — every "why not just X" answer in one place.
+- [`datasets/context-management-bench`](./datasets/context-management-bench) — 24 realistic context-management scenarios (Hugging Face dataset spec), each with real evicted/retained results from actually running the library.
 
 **Performance & comparisons:**
 
