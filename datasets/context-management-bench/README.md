@@ -16,6 +16,8 @@ size_categories:
 
 # context-management-bench
 
+**Live on the Hub:** [huggingface.co/datasets/shivam039-dev/context-management-bench](https://huggingface.co/datasets/shivam039-dev/context-management-bench)
+
 Realistic context-management scenarios for testing/benchmarking eviction strategies (drop-oldest, sliding-window, priority, summarization), pinned-message preservation, and tool-call/tool-result atomicity in multi-turn LLM conversations.
 
 ## Dataset Summary
