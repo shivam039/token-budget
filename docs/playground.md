@@ -59,7 +59,7 @@ npm run build --workspace=@shivam.dixit/token-budget
 npm run dev --workspace=token-budget-playground
 ```
 
-Regenerate the benchmark dataset (see [`docs/DATASET.md`](#the-companion-dataset) below):
+Regenerate the benchmark dataset (see ["The companion dataset"](#the-companion-dataset) below):
 
 ```sh
 npm run generate:dataset
