@@ -129,6 +129,25 @@ claude mcp add --transport http token-budget https://your-host/mcp \
 npx mcp-remote https://your-host/mcp --header "Authorization: Bearer <MCP_API_KEY>"
 ```
 
+**Keeping a Render deployment up to date:** since this server holds live
+in-memory MCP sessions per connection, it deliberately does *not* use
+Render's own auto-deploy — that has no path filter and would restart the
+process (dropping any live sessions) on every push to `main`, including
+changes to unrelated packages elsewhere in this monorepo. Instead,
+[`.github/workflows/deploy-token-budget-mcp.yml`](../../.github/workflows/deploy-token-budget-mcp.yml)
+hits the service's Render Deploy Hook, but only on pushes to `main` that
+touch `packages/token-budget-mcp/**` or `packages/token-budget/src/**`.
+One-time setup:
+
+1. In the Render dashboard, open the service → Settings → Deploy Hook →
+   generate a hook URL.
+2. In the GitHub repo: Settings → Secrets and variables → Actions → New
+   repository secret → name it `RENDER_MCP_DEPLOY_HOOK_URL`, paste the URL.
+
+Without the secret, the workflow still runs and passes — it just skips
+the deploy step with a clear notice instead of failing. You can also
+trigger it manually from the Actions tab ("Run workflow").
+
 ## Tools
 
 | Tool | Does |

@@ -1,0 +1,49 @@
+name: Deploy token-budget-mcp to Render
+
+# token-budget-mcp holds live in-memory MCP sessions per connection, so it
+# does NOT use Render's own auto-deploy: that has no path filter and would
+# restart the process (dropping any live sessions) on every push to main,
+# including changes to unrelated packages elsewhere in this monorepo. This
+# workflow instead hits the service's Render Deploy Hook only when paths
+# that actually affect it change, via a repo secret named
+# RENDER_MCP_DEPLOY_HOOK_URL — generated at the service's Render dashboard
+# (Settings -> Deploy Hook) and added as a repository secret (Settings ->
+# Secrets and variables -> Actions). See packages/token-budget-mcp/README.md
+# for the full one-time setup.
+#
+# Safe to merge before that secret exists: the deploy step checks for it
+# explicitly and prints setup instructions instead of failing red.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'packages/token-budget/src/**'
+      - 'packages/token-budget-mcp/**'
+      - '.github/workflows/deploy-token-budget-mcp.yml'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check for RENDER_MCP_DEPLOY_HOOK_URL
+        id: check_hook
+        run: |
+          if [ -z "${{ secrets.RENDER_MCP_DEPLOY_HOOK_URL }}" ]; then
+            echo "has_hook=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::RENDER_MCP_DEPLOY_HOOK_URL repo secret is not set — skipping deploy. See packages/token-budget-mcp/README.md for setup: generate a Deploy Hook URL at the service's Render dashboard (Settings -> Deploy Hook), then add it as a repository secret named RENDER_MCP_DEPLOY_HOOK_URL (Settings -> Secrets and variables -> Actions)."
+          else
+            echo "has_hook=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Trigger Render deploy
+        if: steps.check_hook.outputs.has_hook == 'true'
+        run: |
+          set -euo pipefail
+          status=$(curl -s -o /dev/null -w "%{http_code}" -X POST "${{ secrets.RENDER_MCP_DEPLOY_HOOK_URL }}")
+          if [ "$status" -lt 200 ] || [ "$status" -ge 300 ]; then
+            echo "::error::Render deploy hook returned HTTP $status"
+            exit 1
+          fi
+          echo "Triggered a new Render deploy for token-budget-mcp (hook returned HTTP $status)."
