@@ -11,6 +11,7 @@ const baseConfig: HttpServerConfig = {
   maxSessionsPerConnection: 20,
   maxMessagesPerSession: 100,
   maxContentLength: 20_000,
+  exposeDemoKey: false,
 };
 
 /** `startHttpServer()`'s `.listen()` call is async; wait for it before reading the assigned port. */
@@ -78,6 +79,29 @@ describe('token-budget-mcp hosted HTTP server', () => {
     server = await listening(startHttpServer(baseConfig));
     const res = await fetch(new URL('/nope', urlFor(server)));
     expect(res.status).toBe(404);
+  });
+
+  it('GET /demo-key is disabled (404) unless exposeDemoKey is set', async () => {
+    server = await listening(startHttpServer(baseConfig));
+    const res = await fetch(new URL('/demo-key', urlFor(server)));
+    expect(res.status).toBe(404);
+  });
+
+  it('GET /demo-key returns the API key, no auth required, when exposeDemoKey is set', async () => {
+    server = await listening(startHttpServer({ ...baseConfig, exposeDemoKey: true }));
+    const res = await fetch(new URL('/demo-key', urlFor(server)));
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ apiKey: baseConfig.apiKey });
+  });
+
+  it('reads EXPOSE_DEMO_KEY from the environment', async () => {
+    vi.stubEnv('MCP_API_KEY', 'env-key');
+    vi.stubEnv('PORT', '0');
+    vi.stubEnv('EXPOSE_DEMO_KEY', '1');
+    server = await listening(startHttpServer());
+    const res = await fetch(new URL('/demo-key', urlFor(server)));
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ apiKey: 'env-key' });
   });
 
   it('a real authenticated client can list tools and drive a full session over HTTP', async () => {

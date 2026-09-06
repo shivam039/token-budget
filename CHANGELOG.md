@@ -6,6 +6,22 @@ how the project got here — useful for understanding *why* something is
 shaped the way it is, not for deciding whether to install it today (see
 the root [`README.md`](./README.md) for that).
 
+## `token-budget-mcp` public demo key endpoint
+
+Added an opt-in `GET /demo-key` route (`EXPOSE_DEMO_KEY=1`, off by
+default) to `token-budget-mcp`'s hosted HTTP server, returning the
+server's current `MCP_API_KEY` value with no auth required. Exists so
+`https://token-budget-mcp.onrender.com` can be a genuinely public,
+no-signup demo instance without ever committing a live credential to
+source control: the README points at fetching the key live from this
+endpoint instead of a hardcoded value, so rotating the key (if the
+shared demo instance is ever abused) is a Render environment-variable
+change only — no code or doc update needed. Defaults to disabled so a
+privately hosted instance doesn't leak its key just by existing; also
+wired via `.github/workflows/deploy-token-budget-mcp.yml`'s existing
+path-scoped Render Deploy Hook, added in the same pass to fix that
+service having silently gone stale on manual-only deploys.
+
 ## `smartPriority` strategy
 
 Added a seventh built-in strategy, `strategies.smartPriority()`, as a

@@ -129,6 +129,33 @@ claude mcp add --transport http token-budget https://your-host/mcp \
 npx mcp-remote https://your-host/mcp --header "Authorization: Bearer <MCP_API_KEY>"
 ```
 
+**Public demo instance:** `https://token-budget-mcp.onrender.com` is a
+free, shared instance anyone can use to try the library interactively —
+no signup or private key of your own required. Fetch the current shared
+key at runtime instead of using a hardcoded value (the key can be rotated
+at any time, so don't cache it):
+
+```sh
+curl https://token-budget-mcp.onrender.com/demo-key
+# {"apiKey":"..."}
+```
+
+Use that value in place of `<MCP_API_KEY>` above. This is a **shared
+public demo key, not a private credential** — every user of this
+instance uses the same one, and it's subject to the same server-wide
+`MAX_CONNECTIONS` cap as everyone else (a free Render instance, so
+capacity is limited; expect `503`s under heavy concurrent use, not a
+guarantee of availability). Don't use this instance for private/sensitive
+message content, and don't rely on it for production — it's a
+testing/demo surface for exploring the library, not a durable service.
+If it's ever abused, the key gets rotated via a Render environment
+variable change only — no code or doc change needed, since `GET
+/demo-key` always reflects whatever `MCP_API_KEY` is currently set. For
+your own private, rate-limit-free, or production use, host your own
+instance with the steps above (the `GET /demo-key` endpoint stays
+disabled unless you explicitly set `EXPOSE_DEMO_KEY=1` — a self-hosted
+private instance never leaks its key just by existing).
+
 **Keeping a Render deployment up to date:** since this server holds live
 in-memory MCP sessions per connection, it deliberately does *not* use
 Render's own auto-deploy — that has no path filter and would restart the

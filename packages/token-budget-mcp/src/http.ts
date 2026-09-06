@@ -41,6 +41,7 @@ export interface HttpServerConfig {
   maxSessionsPerConnection: number;
   maxMessagesPerSession: number;
   maxContentLength: number;
+  exposeDemoKey: boolean;
 }
 
 function readConfig(env: NodeJS.ProcessEnv): HttpServerConfig {
@@ -66,6 +67,11 @@ function readConfig(env: NodeJS.ProcessEnv): HttpServerConfig {
     maxSessionsPerConnection: intEnv('MAX_SESSIONS_PER_CONNECTION', 20),
     maxMessagesPerSession: intEnv('MAX_MESSAGES_PER_SESSION', 100),
     maxContentLength: intEnv('MAX_CONTENT_LENGTH', 20_000),
+    // Opt-in only: exposes GET /demo-key (no auth) so a *deliberately shared*
+    // public instance can hand out its own MCP_API_KEY to any caller without
+    // that value ever being committed to source control. Defaults to off —
+    // a privately hosted instance must not leak its key just by existing.
+    exposeDemoKey: env.EXPOSE_DEMO_KEY === '1' || env.EXPOSE_DEMO_KEY === 'true',
   };
 }
 
@@ -175,6 +181,10 @@ export function startHttpServer(config: HttpServerConfig = readConfig(process.en
     const url = new URL(req.url ?? '/', 'http://localhost');
     if (url.pathname === '/healthz') {
       sendJson(res, 200, { status: 'ok' });
+      return;
+    }
+    if (url.pathname === '/demo-key' && config.exposeDemoKey) {
+      sendJson(res, 200, { apiKey: config.apiKey });
       return;
     }
     if (url.pathname === '/mcp') {
