@@ -124,9 +124,9 @@ export function createServer(options: CreateServerOptions = {}): McpServer {
       title: 'Add a message to a budget session',
       description: 'Appends a message to the session\'s buffer and returns its id, token cost, and timestamp.',
       inputSchema: {
-        sessionId: z.string(),
-        role: z.enum(['system', 'user', 'assistant', 'tool']),
-        content: z.string(),
+        sessionId: z.string().describe('The session id returned by create_budget.'),
+        role: z.enum(['system', 'user', 'assistant', 'tool']).describe('The message\'s role.'),
+        content: z.string().describe('The message text to append to the buffer.'),
         pinned: z.boolean().optional().describe('Never evicted or summarized by any built-in strategy, regardless of age.'),
         priority: z.number().optional().describe('Higher = kept longer by the priority strategy. Default 0.'),
         toolCallId: z.string().optional().describe('Set to the id of the assistant message this tool result answers, for atomic pairing.'),
@@ -162,7 +162,7 @@ export function createServer(options: CreateServerOptions = {}): McpServer {
       description:
         'Applies the session\'s configured strategy and returns what would actually be sent to a model: ' +
         'the surviving messages, tokens used/remaining, and which messages were evicted.',
-      inputSchema: { sessionId: z.string() },
+      inputSchema: { sessionId: z.string().describe('The session id returned by create_budget.') },
     },
     async ({ sessionId }) => {
       try {
@@ -186,7 +186,7 @@ export function createServer(options: CreateServerOptions = {}): McpServer {
     {
       title: 'Explain the last get_context decision',
       description: 'Returns the structured trace of the most recent get_context call for this session: what was evicted/synthesized, and why.',
-      inputSchema: { sessionId: z.string() },
+      inputSchema: { sessionId: z.string().describe('The session id returned by create_budget.') },
     },
     async ({ sessionId }) => {
       try {
@@ -205,7 +205,7 @@ export function createServer(options: CreateServerOptions = {}): McpServer {
     {
       title: 'Get current session stats',
       description: 'Current token usage, message count, and pinned count for a session, without applying the strategy.',
-      inputSchema: { sessionId: z.string() },
+      inputSchema: { sessionId: z.string().describe('The session id returned by create_budget.') },
     },
     async ({ sessionId }) => {
       try {
@@ -225,8 +225,8 @@ export function createServer(options: CreateServerOptions = {}): McpServer {
         'Shrinks text to fit maxTokens using truncateToolOutput() — for a single tool result too big for the ' +
         'whole strategy machinery to help with (eviction operates on whole messages). Stateless: no sessionId needed.',
       inputSchema: {
-        text: z.string(),
-        maxTokens: z.number().int().positive(),
+        text: z.string().describe('The text to shrink.'),
+        maxTokens: z.number().int().positive().describe('The token budget the output must fit within.'),
         keep: z.enum(['start', 'end', 'both']).optional().describe('Which part to keep. Default "end".'),
       },
     },
@@ -263,7 +263,7 @@ export function createServer(options: CreateServerOptions = {}): McpServer {
     {
       title: 'Remove a budget session',
       description: 'Discards a session and its buffer. Returns false if the id was already unknown.',
-      inputSchema: { sessionId: z.string() },
+      inputSchema: { sessionId: z.string().describe('The session id returned by create_budget.') },
     },
     async ({ sessionId }) => textResult({ removed: sessions.remove(sessionId) }),
   );
