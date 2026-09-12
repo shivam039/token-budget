@@ -52,6 +52,14 @@ describe('token-budget-mcp server', () => {
     expect(analysis.pinned.messageCount).toBe(1);
     const comparison = parseResult((await client.callTool({ name: 'compare_strategies', arguments: { messages, maxTokens: 100 } })) as any);
     expect(comparison.strategies).toHaveLength(4);
+    const pressure = parseResult((await client.callTool({ name: 'simulate_pressure', arguments: {
+      messages, maxTokens: 100, strategy: 'dropOldest', increments: [10, 25],
+    } })) as any);
+    expect(pressure.pressure).toHaveLength(2);
+    const breakpoint = parseResult((await client.callTool({ name: 'find_breakpoint', arguments: {
+      messages, maxTokens: 100, averageFutureMessageTokens: 10,
+    } })) as any);
+    expect(breakpoint.estimatedMessagesUntilBudget).toBeTypeOf('number');
     const diagnosis = parseResult((await client.callTool({ name: 'diagnose_budget', arguments: { messages, maxTokens: 100 } })) as any);
     expect(diagnosis.findings.some((finding: any) => finding.code === 'PINNED_CONTEXT_PRESENT')).toBe(true);
     const recommendation = parseResult((await client.callTool({ name: 'recommend_strategy', arguments: { messages, maxTokens: 100 } })) as any);
