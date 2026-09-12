@@ -105,16 +105,20 @@ same instance between requests.)
 MCP_API_KEY=<a long random secret> npm start   # from packages/token-budget-mcp, after npm run build
 ```
 
-Required: `MCP_API_KEY` — the server refuses to start without it rather
-than silently serving the internet with no auth. Every `/mcp` request
-needs `Authorization: Bearer <MCP_API_KEY>`; `GET /healthz` doesn't (for
-platform health checks).
+Private mode requires `MCP_API_KEY`; every `/mcp` request needs
+`Authorization: Bearer <MCP_API_KEY>`. For an explicitly opted-in demo,
+set `PUBLIC_DEMO_MODE=true`; this permits anonymous MCP traffic but keeps
+strict in-memory connection, body, and rate limits. `/healthz` is liveness;
+`/readyz` reports readiness, version, revision (`GIT_SHA`), uptime, and
+connection counts.
 
 Optional env vars, all with sensible defaults, bounding one client's
 worst-case memory footprint on a shared server: `PORT` (3000),
 `MAX_CONNECTIONS` (20 concurrent MCP clients), `MAX_SESSIONS_PER_CONNECTION`
 (20 budget sessions each), `MAX_MESSAGES_PER_SESSION` (100),
-`MAX_CONTENT_LENGTH` (20,000 characters per message). The stdio path
+`MAX_CONTENT_LENGTH` (20,000 characters per message), `MAX_REQUEST_BODY_BYTES`
+(1MB), `CONNECTION_IDLE_TTL_MS` (15 minutes), `RATE_LIMIT_WINDOW_MS` (1 minute),
+`RATE_LIMIT_MAX_REQUESTS` (120), and `SHUTDOWN_GRACE_MS` (10 seconds). The stdio path
 above never sets any of these — a single local user needs none of them.
 
 **Connecting a client to a hosted instance:**
@@ -129,11 +133,10 @@ claude mcp add --transport http token-budget https://your-host/mcp \
 npx mcp-remote https://your-host/mcp --header "Authorization: Bearer <MCP_API_KEY>"
 ```
 
-**Public demo instance:** `https://token-budget-mcp.onrender.com` is a
-free, shared instance anyone can use to try the library interactively —
-no signup or private key of your own required. Fetch the current shared
-key at runtime instead of using a hardcoded value (the key can be rotated
-at any time, so don't cache it):
+**Public demo instance:** configure your own hosted instance with
+`PUBLIC_DEMO_MODE=true` for anonymous access. The old `/demo-key` endpoint
+is retained only when `EXPOSE_DEMO_KEY=1`, and is deprecated; it is disabled
+by default and should not be used for private deployments.
 
 ```sh
 curl https://token-budget-mcp.onrender.com/demo-key
@@ -171,9 +174,12 @@ One-time setup:
 2. In the GitHub repo: Settings → Secrets and variables → Actions → New
    repository secret → name it `RENDER_MCP_DEPLOY_HOOK_URL`, paste the URL.
 
-Without the secret, the workflow still runs and passes — it just skips
-the deploy step with a clear notice instead of failing. You can also
-trigger it manually from the Actions tab ("Run workflow").
+The workflow requires the deploy-hook secret, waits for `/readyz` to report
+the expected Git SHA, then runs the real MCP smoke test. Set `MCP_URL` and
+optional `MCP_API_KEY` GitHub secrets. Run `npm run smoke:mcp` locally to
+initialize, list tools, and invoke `truncate_tool_output`. A separate
+manual `verify-token-budget-mcp` workflow checks the live service without
+deploying. Sessions and budgets remain process-local and in-memory.
 
 ## Tools
 
