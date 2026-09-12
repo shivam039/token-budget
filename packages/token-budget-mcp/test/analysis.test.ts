@@ -65,4 +65,39 @@ describe("Strategy Lab analytical engine", () => {
     const diagnosis = diagnoseBudget(chat, 20, 0);
     expect(diagnosis.findings.every((finding) => finding.evidence !== undefined)).toBe(true);
   });
+
+  it("exposes bounded turn, tool, priority, and system metrics", () => {
+    const result = analyzeConversation([
+      { role: "system", content: "rules", pinned: true },
+      { role: "user", content: "question", priority: 1 },
+      { role: "assistant", content: "answer" },
+      { role: "tool", content: "result", toolCallId: "call-1" },
+      { role: "assistant", content: "follow-up" },
+      { role: "user", content: "more", priority: 3 },
+    ], 200, 10);
+    expect(result.system.tokens).toBeGreaterThan(0);
+    expect(result.pinned.messageCount).toBe(1);
+    expect(result.turns.userTurns).toBe(2);
+    expect(result.turns.assistantTurns).toBe(1);
+    expect(result.tools.toolMessageCount).toBe(1);
+    expect(result.tools.distinctToolCallIds).toBe(1);
+    expect(result.priorities.meaningfulVariation).toBe(true);
+    assertFinite(result);
+  });
+
+  it("does not make one incidental tool result a smartPriority mandate", () => {
+    const result = recommendStrategy([
+      { role: "user", content: "question" },
+      { role: "assistant", content: "answer" },
+      { role: "tool", content: "incidental result" },
+    ], 200, 0);
+    expect(result.scores.smartPriority).toBeLessThanOrEqual(result.scores.dropOldest);
+  });
+
+  it("keeps zero-size breakpoint estimates finite", () => {
+    const result = findBreakpoint(chat, 200, 0, undefined, 0);
+    expect(result.estimatedMessagesUntilWarning).toBe(0);
+    expect(result.estimatedMessagesUntilBudget).toBe(0);
+    assertFinite(result);
+  });
 });
