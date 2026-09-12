@@ -26,7 +26,10 @@ export type InputMessage = {
   toolCallId?: string;
 };
 
-export type AnalyzedMessage = { index: number; role: Role; tokens: number; pinned: boolean; priority: number; toolCallId?: string; preview: string };
+export type AnalyzedMessage = { index: number; role: Role; tokens: number; pinned: boolean; priority: number; explicitPriority: boolean; toolCallId?: string; preview: string };
+export type TurnMetrics = { userTurns: number; assistantTurns: number; toolCycles: number; totalTurns: number; averageTokensPerTurn: number; longestTurnTokens: number; recentTurnTokenShare: number };
+export type ToolMetrics = { toolMessageCount: number; toolTokens: number; toolTokenFraction: number | null; messagesWithToolCallId: number; distinctToolCallIds: number; toolCycles: number; pairedToolInteractions: number; unpairedToolResults: number };
+export type PriorityMetrics = { messagesWithExplicitPriority: number; priorityFraction: number; distinctPriorities: number; minPriority: number | null; maxPriority: number | null; priorityRange: number | null; meaningfulVariation: boolean };
 
 const PREVIEW_LIMIT = 120;
 
@@ -38,7 +41,39 @@ function strategyFor(name: AnalysisStrategy, turns = 2) {
 }
 
 function normalizedMessages(budget: TokenBudget): AnalyzedMessage[] {
-  return budget.getMessages().map((message, index) => ({ index, role: message.role, tokens: message.tokens ?? 0, pinned: message.pinned === true, priority: message.priority ?? 0, toolCallId: message.toolCallId, preview: typeof message.content === "string" ? message.content.slice(0, PREVIEW_LIMIT) : "[content blocks]" }));
+  return budget.getMessages().map((message, index) => ({ index, role: message.role, tokens: message.tokens ?? 0, pinned: message.pinned === true, priority: message.priority ?? 0, explicitPriority: message.priority !== undefined, toolCallId: message.toolCallId, preview: typeof message.content === "string" ? message.content.slice(0, PREVIEW_LIMIT) : "[content blocks]" }));
+}
+
+function deriveTurnMetrics(messages: AnalyzedMessage[]): TurnMetrics {
+  const turns: AnalyzedMessage[][] = [];
+  for (const message of messages) {
+    const previous = turns.at(-1);
+    const startsTurn = !previous || (message.role !== previous[0]!.role && message.role !== "tool");
+    if (startsTurn) turns.push([message]);
+    else previous!.push(message);
+  }
+  const turnTokens = turns.map((turn) => turn.reduce((sum, message) => sum + message.tokens, 0));
+  const userTurns = turns.filter((turn) => turn.some((message) => message.role === "user")).length;
+  const assistantTurns = turns.filter((turn) => turn.some((message) => message.role === "assistant")).length;
+  const toolCycles = turns.filter((turn) => turn.some((message) => message.role === "tool") && turn.some((message) => message.role === "assistant")).length;
+  const totalTokens = turnTokens.reduce((sum, tokens) => sum + tokens, 0);
+  const recentTokens = turnTokens.slice(-2).reduce((sum, tokens) => sum + tokens, 0);
+  return { userTurns, assistantTurns, toolCycles, totalTurns: turns.length, averageTokensPerTurn: turns.length ? totalTokens / turns.length : 0, longestTurnTokens: Math.max(0, ...turnTokens), recentTurnTokenShare: totalTokens ? recentTokens / totalTokens : 0 };
+}
+
+function deriveToolMetrics(messages: AnalyzedMessage[]): ToolMetrics {
+  const tools = messages.filter((message) => message.role === "tool");
+  const ids = tools.filter((message) => message.toolCallId).map((message) => message.toolCallId!);
+  const distinctToolCallIds = new Set(ids).size;
+  return { toolMessageCount: tools.length, toolTokens: tools.reduce((sum, message) => sum + message.tokens, 0), toolTokenFraction: messages.reduce((sum, message) => sum + message.tokens, 0) ? tools.reduce((sum, message) => sum + message.tokens, 0) / messages.reduce((sum, message) => sum + message.tokens, 0) : null, messagesWithToolCallId: ids.length, distinctToolCallIds, toolCycles: deriveTurnMetrics(messages).toolCycles, pairedToolInteractions: 0, unpairedToolResults: tools.length };
+}
+
+function derivePriorityMetrics(messages: AnalyzedMessage[]): PriorityMetrics {
+  const prioritized = messages.filter((message) => message.explicitPriority);
+  const values = [...new Set(prioritized.map((message) => message.priority))];
+  const minPriority = values.length ? Math.min(...values) : null;
+  const maxPriority = values.length ? Math.max(...values) : null;
+  return { messagesWithExplicitPriority: prioritized.length, priorityFraction: messages.length ? prioritized.length / messages.length : 0, distinctPriorities: values.length, minPriority, maxPriority, priorityRange: minPriority !== null && maxPriority !== null ? maxPriority - minPriority : null, meaningfulVariation: values.length >= 2 };
 }
 
 export function makeBudget(
@@ -79,6 +114,10 @@ export function analyzeConversation(
   );
   const pinnedMessages = normalized.filter((message) => message.pinned);
   const pinnedTokens = pinnedMessages.reduce((total, message) => total + message.tokens, 0);
+  const turns = deriveTurnMetrics(normalized);
+  const tools = deriveToolMetrics(normalized);
+  const priorities = derivePriorityMetrics(normalized);
+  const systemTokens = byRole.system!.tokens;
   const warnings: Array<{ code: string; message: string }> = [];
   const utilization = effectiveBudget > 0 ? stats.tokensUsed / effectiveBudget : null;
   if (utilization !== null && utilization >= 0.8)
@@ -121,6 +160,10 @@ export function analyzeConversation(
       tokens: pinnedTokens,
       fractionOfBudget: effectiveBudget > 0 ? pinnedTokens / effectiveBudget : null,
     },
+    system: { tokens: systemTokens, fractionOfBudget: effectiveBudget > 0 ? systemTokens / effectiveBudget : null },
+    turns,
+    tools,
+    priorities,
     largestMessages: normalized
       .sort((a, b) => b.tokens - a.tokens)
       .slice(0, 5),
@@ -270,19 +313,19 @@ export function recommendStrategy(
   reserve: number,
   model?: string,
 ) {
-  const explicitPriorities = messages.filter((message) => message.priority !== undefined);
-  const priorityValues = [...new Set(explicitPriorities.map((message) => message.priority))];
-  const priorityMeaningful = priorityValues.length > 1;
-  const toolCount = messages.filter((message) => message.role === "tool").length;
-  const userTurns = messages.filter((message) => message.role === "user").length;
-  const pinnedCount = messages.filter((message) => message.pinned).length;
+  const analysis = analyzeConversation(messages, maxTokens, reserve, model);
+  const { priorities, tools, turns } = analysis;
+  const priorityMeaningful = priorities.meaningfulVariation;
+  const toolCount = tools.toolMessageCount;
+  const userTurns = turns.userTurns;
+  const pinnedCount = analysis.pinned.messageCount;
   const scores: Record<AnalysisStrategy, number> = {
     dropOldest: messages.length > 0 ? 2 : 0,
     slidingWindow: userTurns >= 3 ? 3 : 0,
-    priority: explicitPriorities.length / Math.max(1, messages.length) >= 0.5 && priorityMeaningful ? 5 : 0,
+    priority: priorities.priorityFraction >= 0.5 && priorityMeaningful ? 5 : 0,
     smartPriority: 0,
   };
-  if (!explicitPriorities.length) scores.dropOldest += 1;
+  if (!priorities.messagesWithExplicitPriority) scores.dropOldest += 1;
   if (userTurns >= 3 && !priorityMeaningful) scores.slidingWindow += 1;
   if (toolCount >= 3) scores.smartPriority += 4;
   if (pinnedCount >= 2) scores.smartPriority += 2;
@@ -391,10 +434,10 @@ export function findBreakpoint(
     tokensUntilWarning: untilWarning,
     tokensUntilBudget: untilBudget,
     estimatedMessagesUntilWarning: Math.floor(
-      untilWarning / averageFutureMessageTokens,
+      averageFutureMessageTokens > 0 ? untilWarning / averageFutureMessageTokens : 0,
     ),
     estimatedMessagesUntilBudget: Math.floor(
-      untilBudget / averageFutureMessageTokens,
+      averageFutureMessageTokens > 0 ? untilBudget / averageFutureMessageTokens : 0,
     ),
     alreadyOverBudget: !current.fits,
     impossiblePinnedContent: current.pinned.tokens > current.effectiveBudget,
