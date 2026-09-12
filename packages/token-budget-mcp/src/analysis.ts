@@ -342,6 +342,8 @@ export function simulatePressure(
 ) {
   const current = analyzeConversation(messages, maxTokens, reserve, model);
   return {
+    mode: "capacity" as const,
+    note: "Anonymous token increments measure raw capacity only; strategy-specific eviction requires future message boundaries.",
     current,
     pressure: increments.map((additionalTokens) => ({
       additionalTokens,
@@ -369,6 +371,7 @@ export function findBreakpoint(
   reserve: number,
   model: string | undefined,
   averageFutureMessageTokens: number,
+  warningThreshold = 0.8,
 ) {
   const current = analyzeConversation(messages, maxTokens, reserve, model);
   const untilBudget = Math.max(
@@ -377,9 +380,14 @@ export function findBreakpoint(
   );
   const untilWarning = Math.max(
     0,
-    current.effectiveBudget * 0.8 - current.totalTokens,
+    current.effectiveBudget * warningThreshold - current.totalTokens,
   );
   return {
+    currentTokens: current.totalTokens,
+    effectiveBudget: current.effectiveBudget,
+    warningThreshold,
+    warningTokenBoundary: current.effectiveBudget * warningThreshold,
+    alreadyPastWarning: current.totalTokens >= current.effectiveBudget * warningThreshold,
     tokensUntilWarning: untilWarning,
     tokensUntilBudget: untilBudget,
     estimatedMessagesUntilWarning: Math.floor(

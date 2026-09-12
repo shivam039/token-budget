@@ -576,6 +576,12 @@ export function createServer(options: CreateServerOptions = {}): McpServer {
           .number()
           .positive()
           .describe("Estimated tokens per future message."),
+        warningThreshold: z
+          .number()
+          .min(0)
+          .max(1)
+          .default(0.8)
+          .describe("Warning fraction of the effective budget; defaults to TokenBudget's 0.8."),
       },
     },
     async ({
@@ -584,6 +590,7 @@ export function createServer(options: CreateServerOptions = {}): McpServer {
       reserve,
       model,
       averageFutureMessageTokens,
+      warningThreshold,
     }) =>
       textResult(
         findBreakpoint(
@@ -592,6 +599,7 @@ export function createServer(options: CreateServerOptions = {}): McpServer {
           reserve,
           model,
           averageFutureMessageTokens,
+          warningThreshold,
         ),
       ),
   );
