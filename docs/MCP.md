@@ -48,6 +48,8 @@ trying token-budget's actual eviction/pinning/tool-pairing behavior
 required writing a small TypeScript script. Now it's a few tool calls
 away from any MCP client, including Claude Code itself.
 
+For practical setup instructions across Claude Code/Desktop, Cursor, OpenAI Agents SDK (JavaScript/TypeScript and Python), custom agents, other MCP-native clients, authentication, remote Streamable HTTP, and troubleshooting, see [`docs/MCP-INTEGRATIONS.md`](./MCP-INTEGRATIONS.md).
+
 ## The other opportunity this doc originally described: MCP client middleware
 
 The place MCP genuinely intersects the *problem* this library solves is
