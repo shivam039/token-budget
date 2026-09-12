@@ -16,6 +16,7 @@
     "bench": "npm run bench --workspace=token-budget-bench",
     "guardrails": "node scripts/guardrails/runner.js",
     "generate:dataset": "tsx scripts/generate-context-dataset.ts"
+    ,"smoke:mcp": "node scripts/smoke-token-budget-mcp.mjs"
   },
   "license": "MIT",
   "devDependencies": {

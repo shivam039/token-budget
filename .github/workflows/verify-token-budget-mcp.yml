@@ -1,0 +1,18 @@
+name: Verify token-budget-mcp
+on: workflow_dispatch
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: npm ci
+      - name: Check health and readiness
+        env: { MCP_URL: '${{ secrets.MCP_URL }}' }
+        run: |
+          curl --fail --silent "$MCP_URL/healthz"; echo
+          curl --fail --silent "$MCP_URL/readyz"; echo
+      - name: Run MCP smoke test
+        env: { MCP_URL: '${{ secrets.MCP_URL }}', MCP_API_KEY: '${{ secrets.MCP_API_KEY }}' }
+        run: npm run smoke:mcp

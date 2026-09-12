@@ -11,8 +11,8 @@ name: Deploy token-budget-mcp to Render
 # Secrets and variables -> Actions). See packages/token-budget-mcp/README.md
 # for the full one-time setup.
 #
-# Safe to merge before that secret exists: the deploy step checks for it
-# explicitly and prints setup instructions instead of failing red.
+# The deployment secret is required: a deployment workflow must fail closed
+# rather than reporting success when no deployment was attempted.
 
 on:
   push:
@@ -27,18 +27,11 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Check for RENDER_MCP_DEPLOY_HOOK_URL
-        id: check_hook
+      - name: Require Render deploy hook
         run: |
-          if [ -z "${{ secrets.RENDER_MCP_DEPLOY_HOOK_URL }}" ]; then
-            echo "has_hook=false" >> "$GITHUB_OUTPUT"
-            echo "::warning::RENDER_MCP_DEPLOY_HOOK_URL repo secret is not set — skipping deploy. See packages/token-budget-mcp/README.md for setup: generate a Deploy Hook URL at the service's Render dashboard (Settings -> Deploy Hook), then add it as a repository secret named RENDER_MCP_DEPLOY_HOOK_URL (Settings -> Secrets and variables -> Actions)."
-          else
-            echo "has_hook=true" >> "$GITHUB_OUTPUT"
-          fi
+          test -n "${{ secrets.RENDER_MCP_DEPLOY_HOOK_URL }}" || { echo "RENDER_MCP_DEPLOY_HOOK_URL is required; configure it in GitHub Actions secrets."; exit 1; }
 
       - name: Trigger Render deploy
-        if: steps.check_hook.outputs.has_hook == 'true'
         run: |
           set -euo pipefail
           status=$(curl -s -o /dev/null -w "%{http_code}" -X POST "${{ secrets.RENDER_MCP_DEPLOY_HOOK_URL }}")
@@ -47,3 +40,12 @@ jobs:
             exit 1
           fi
           echo "Triggered a new Render deploy for token-budget-mcp (hook returned HTTP $status)."
+
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: npm ci
+      - name: Smoke test hosted MCP
+        env:
+          MCP_URL: ${{ secrets.MCP_URL }}
+          MCP_API_KEY: ${{ secrets.MCP_API_KEY }}
+        run: npm run smoke:mcp
