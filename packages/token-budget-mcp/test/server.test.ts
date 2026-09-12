@@ -30,12 +30,40 @@ describe('token-budget-mcp server', () => {
     client = await connectedClient();
   });
 
-  it('lists all 8 tools', async () => {
+  it('lists the core and Strategy Lab tools', async () => {
     const { tools } = await client.listTools();
     const names = tools.map((t) => t.name).sort();
-    expect(names).toEqual(
-      ['add_message', 'create_budget', 'explain', 'get_context', 'list_sessions', 'remove_session', 'stats', 'truncate_tool_output'].sort(),
-    );
+    expect(names).toEqual([
+      'add_message', 'analyze_conversation', 'compare_strategies', 'create_budget', 'diagnose_budget',
+      'explain', 'find_breakpoint', 'get_context', 'list_sessions', 'recommend_strategy', 'remove_session',
+      'simulate_pressure', 'stats', 'truncate_tool_output',
+    ].sort());
+  });
+
+  it('runs Strategy Lab diagnostics through the real MCP client', async () => {
+    const messages = [
+      { role: 'system', content: 'You are helpful.', pinned: true },
+      { role: 'user', content: 'Inspect this tool result.' },
+      { role: 'tool', content: 'large result '.repeat(20), toolCallId: 'call-1' },
+    ];
+    const analysis = parseResult((await client.callTool({ name: 'analyze_conversation', arguments: { messages, maxTokens: 100 } })) as any);
+    expect(analysis.messageCount).toBe(3);
+    expect(analysis.byRole.tool.messageCount).toBe(1);
+    expect(analysis.pinned.messageCount).toBe(1);
+    const comparison = parseResult((await client.callTool({ name: 'compare_strategies', arguments: { messages, maxTokens: 100 } })) as any);
+    expect(comparison.strategies).toHaveLength(4);
+    const pressure = parseResult((await client.callTool({ name: 'simulate_pressure', arguments: {
+      messages, maxTokens: 100, strategy: 'dropOldest', increments: [10, 25],
+    } })) as any);
+    expect(pressure.pressure).toHaveLength(2);
+    const breakpoint = parseResult((await client.callTool({ name: 'find_breakpoint', arguments: {
+      messages, maxTokens: 100, averageFutureMessageTokens: 10,
+    } })) as any);
+    expect(breakpoint.estimatedMessagesUntilBudget).toBeTypeOf('number');
+    const diagnosis = parseResult((await client.callTool({ name: 'diagnose_budget', arguments: { messages, maxTokens: 100 } })) as any);
+    expect(diagnosis.findings.some((finding: any) => finding.code === 'PINNED_CONTEXT_PRESENT')).toBe(true);
+    const recommendation = parseResult((await client.callTool({ name: 'recommend_strategy', arguments: { messages, maxTokens: 100 } })) as any);
+    expect(recommendation.recommended).toBe('smartPriority');
   });
 
   it('create_budget with an explicit maxTokens returns a usable sessionId', async () => {

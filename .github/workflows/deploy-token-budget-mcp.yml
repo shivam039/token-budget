@@ -31,7 +31,7 @@ jobs:
       - name: Require Render deploy hook
         run: |
           test -n "${{ secrets.RENDER_MCP_DEPLOY_HOOK_URL }}" || { echo "RENDER_MCP_DEPLOY_HOOK_URL is required; configure it in GitHub Actions secrets."; exit 1; }
-          test -n "${{ secrets.MCP_URL }}" || { echo "MCP_URL is required for deployment verification; configure it in GitHub Actions secrets."; exit 1; }
+          test -n "${{ secrets.MCP_BASE_URL }}" || { echo "MCP_BASE_URL is required for deployment verification; configure it in GitHub Actions secrets."; exit 1; }
 
       - name: Trigger Render deploy
         run: |
@@ -45,14 +45,14 @@ jobs:
 
       - name: Wait for expected revision
         env:
-          MCP_URL: ${{ secrets.MCP_URL }}
+          MCP_BASE_URL: ${{ secrets.MCP_BASE_URL }}
           EXPECTED_SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
           last_status="000"
           last_revision="unknown"
           for attempt in $(seq 1 40); do
-            response=$(curl -sS --max-time 15 -w '\n%{http_code}' "$MCP_URL/readyz" || true)
+            response=$(curl -sS --max-time 15 -w '\n%{http_code}' "$MCP_BASE_URL/readyz" || true)
             status=$(printf '%s\n' "$response" | tail -n 1)
             payload=$(printf '%s\n' "$response" | sed '$d')
             revision=$(printf '%s' "$payload" | jq -r '.revision // "unknown"' 2>/dev/null || echo unknown)
@@ -72,6 +72,6 @@ jobs:
       - run: npm ci
       - name: Smoke test hosted MCP
         env:
-          MCP_URL: ${{ secrets.MCP_URL }}
+          MCP_BASE_URL: ${{ secrets.MCP_BASE_URL }}
           MCP_API_KEY: ${{ secrets.MCP_API_KEY }}
         run: npm run smoke:mcp

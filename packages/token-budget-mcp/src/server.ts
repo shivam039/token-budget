@@ -9,6 +9,15 @@ import {
 import type { BudgetMessage, Role } from "@shivam.dixit/token-budget";
 import { SessionStore } from "./sessions.js";
 import { MCP_VERSION } from "./version.js";
+import {
+  ANALYSIS_STRATEGIES,
+  analyzeConversation,
+  compareStrategies,
+  diagnoseBudget,
+  findBreakpoint,
+  recommendStrategy,
+  simulatePressure,
+} from "./analysis.js";
 
 const STRATEGY_NAMES = [
   "dropOldest",
@@ -411,6 +420,202 @@ export function createServer(options: CreateServerOptions = {}): McpServer {
     },
     async ({ sessionId }) =>
       textResult({ removed: sessions.remove(sessionId) }),
+  );
+
+  const messageSchema = z
+    .array(
+      z.object({
+        role: z
+          .enum(["system", "user", "assistant", "tool"])
+          .describe("Conversation role."),
+        content: z.string().describe("Message text."),
+        pinned: z
+          .boolean()
+          .optional()
+          .describe("Whether the message must be preserved."),
+        priority: z.number().optional().describe("Optional strategy priority."),
+        toolCallId: z
+          .string()
+          .optional()
+          .describe("Optional tool-call relationship id."),
+      }),
+    )
+    .max(options.maxMessagesPerSession ?? 1000)
+    .describe("Messages to analyze.");
+  const budgetFields = {
+    maxTokens: z
+      .number()
+      .int()
+      .positive()
+      .optional()
+      .describe("Context window size in tokens."),
+    reserve: z
+      .number()
+      .int()
+      .nonnegative()
+      .default(0)
+      .describe("Tokens reserved for model output."),
+    model: z
+      .string()
+      .optional()
+      .describe("Recognized model name when maxTokens is omitted."),
+  };
+  server.registerTool(
+    "analyze_conversation",
+    {
+      title: "Analyze conversation tokens",
+      description:
+        "Analyze token usage and deterministic context warnings without applying eviction.",
+      inputSchema: { messages: messageSchema, ...budgetFields },
+    },
+    async ({ messages, maxTokens, reserve, model }) =>
+      textResult(analyzeConversation(messages, maxTokens, reserve, model)),
+  );
+  server.registerTool(
+    "compare_strategies",
+    {
+      title: "Compare budget strategies",
+      description:
+        "Run the same conversation independently through multiple strategies and compare retained context.",
+      inputSchema: {
+        messages: messageSchema,
+        ...budgetFields,
+        strategies: z
+          .array(z.enum(ANALYSIS_STRATEGIES))
+          .optional()
+          .describe("Strategies to compare; defaults to all core strategies."),
+        slidingWindowTurns: z
+          .number()
+          .int()
+          .positive()
+          .default(2)
+          .describe("Turns retained by slidingWindow."),
+        includeMessages: z
+          .boolean()
+          .default(false)
+          .describe("Include compact retained-message previews."),
+      },
+    },
+    async ({
+      messages,
+      maxTokens,
+      reserve,
+      model,
+      strategies: selected,
+      slidingWindowTurns,
+      includeMessages,
+    }) =>
+      textResult(
+        await compareStrategies(
+          messages,
+          maxTokens,
+          reserve,
+          model,
+          selected,
+          slidingWindowTurns,
+          includeMessages,
+        ),
+      ),
+  );
+  server.registerTool(
+    "simulate_pressure",
+    {
+      title: "Simulate context pressure",
+      description:
+        "Estimate remaining capacity as additional token increments arrive; future message boundaries are estimated.",
+      inputSchema: {
+        messages: messageSchema,
+        ...budgetFields,
+        strategy: z
+          .enum(ANALYSIS_STRATEGIES)
+          .default("dropOldest")
+          .describe("Strategy under consideration."),
+        increments: z
+          .array(z.number().int().nonnegative())
+          .max(20)
+          .describe("Additional token increments."),
+        slidingWindowTurns: z
+          .number()
+          .int()
+          .positive()
+          .default(2)
+          .describe("Turns for slidingWindow."),
+      },
+    },
+    async ({
+      messages,
+      maxTokens,
+      reserve,
+      model,
+      strategy,
+      increments,
+      slidingWindowTurns,
+    }) =>
+      textResult(
+        simulatePressure(
+          messages,
+          maxTokens,
+          reserve,
+          model,
+          strategy,
+          increments,
+          slidingWindowTurns,
+        ),
+      ),
+  );
+  server.registerTool(
+    "find_breakpoint",
+    {
+      title: "Find context breakpoint",
+      description:
+        "Calculate estimated tokens and messages until warning or budget exhaustion.",
+      inputSchema: {
+        messages: messageSchema,
+        ...budgetFields,
+        averageFutureMessageTokens: z
+          .number()
+          .positive()
+          .describe("Estimated tokens per future message."),
+      },
+    },
+    async ({
+      messages,
+      maxTokens,
+      reserve,
+      model,
+      averageFutureMessageTokens,
+    }) =>
+      textResult(
+        findBreakpoint(
+          messages,
+          maxTokens,
+          reserve,
+          model,
+          averageFutureMessageTokens,
+        ),
+      ),
+  );
+  server.registerTool(
+    "diagnose_budget",
+    {
+      title: "Diagnose budget pressure",
+      description:
+        "Return structured, deterministic findings about context composition and pressure.",
+      inputSchema: { messages: messageSchema, ...budgetFields },
+    },
+    async ({ messages, maxTokens, reserve, model }) =>
+      textResult(diagnoseBudget(messages, maxTokens, reserve, model)),
+  );
+  server.registerTool(
+    "recommend_strategy",
+    {
+      title: "Explain strategy fit",
+      description:
+        "Suggest a deterministic strategy fit with explicit reasons and tradeoffs; not investment or model advice.",
+      inputSchema: { messages: messageSchema, ...budgetFields },
+    },
+    async ({ messages, maxTokens, reserve, model }) =>
+      textResult(recommendStrategy(messages, maxTokens, reserve, model)),
   );
 
   return server;
