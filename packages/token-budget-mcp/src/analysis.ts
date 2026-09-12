@@ -1,9 +1,15 @@
 import {
   TokenBudget,
-  createEstimateTokenizer,
   strategies,
 } from "@shivam.dixit/token-budget";
 import type { BudgetMessage, Role } from "@shivam.dixit/token-budget";
+
+export const STRATEGY_INFO = {
+  dropOldest: { summary: "Evicts the oldest eligible context first.", strengths: ["simple", "predictable"], tradeoffs: ["can discard important early context"] },
+  slidingWindow: { summary: "Keeps the most recent conversational turns.", strengths: ["strong recency", "turn continuity"], tradeoffs: ["may discard older context"] },
+  priority: { summary: "Preserves messages using explicit priority metadata.", strengths: ["respects caller priorities"], tradeoffs: ["needs meaningful priorities"] },
+  smartPriority: { summary: "Combines structural, priority, pinned, and tool-aware preservation.", strengths: ["handles agent context structure"], tradeoffs: ["more policy-driven than oldest-first"] },
+} as const;
 
 export const ANALYSIS_STRATEGIES = [
   "dropOldest",
@@ -20,6 +26,8 @@ export type InputMessage = {
   toolCallId?: string;
 };
 
+export type AnalyzedMessage = { index: number; role: Role; tokens: number; pinned: boolean; priority: number; toolCallId?: string; preview: string };
+
 const PREVIEW_LIMIT = 120;
 
 function strategyFor(name: AnalysisStrategy, turns = 2) {
@@ -27,6 +35,10 @@ function strategyFor(name: AnalysisStrategy, turns = 2) {
   if (name === "priority") return strategies.priority();
   if (name === "smartPriority") return strategies.smartPriority();
   return strategies.dropOldest();
+}
+
+function normalizedMessages(budget: TokenBudget): AnalyzedMessage[] {
+  return budget.getMessages().map((message, index) => ({ index, role: message.role, tokens: message.tokens ?? 0, pinned: message.pinned === true, priority: message.priority ?? 0, toolCallId: message.toolCallId, preview: typeof message.content === "string" ? message.content.slice(0, PREVIEW_LIMIT) : "[content blocks]" }));
 }
 
 export function makeBudget(
@@ -58,29 +70,18 @@ export function analyzeConversation(
   const budget = makeBudget(messages, maxTokens, reserve, model, "dropOldest");
   const stats = budget.stats();
   const effectiveBudget = budget.effectiveBudget;
+  const normalized = normalizedMessages(budget);
   const byRole = Object.fromEntries(
     (["system", "user", "assistant", "tool"] as Role[]).map((role) => {
-      const roleMessages = messages.filter((message) => message.role === role);
-      const tokens = roleMessages.reduce(
-        (total, message) =>
-          total +
-          (message.content
-            ? createEstimateTokenizer().count(message.content) + 4
-            : 4),
-        0,
-      );
-      return [role, { messageCount: roleMessages.length, tokens }];
+      const roleMessages = normalized.filter((message) => message.role === role);
+      return [role, { messageCount: roleMessages.length, tokens: roleMessages.reduce((total, message) => total + message.tokens, 0) }];
     }),
   );
-  const pinnedMessages = messages.filter((message) => message.pinned);
-  const pinnedTokens = pinnedMessages.reduce(
-    (total, message) =>
-      total + createEstimateTokenizer().count(message.content) + 4,
-    0,
-  );
+  const pinnedMessages = normalized.filter((message) => message.pinned);
+  const pinnedTokens = pinnedMessages.reduce((total, message) => total + message.tokens, 0);
   const warnings: Array<{ code: string; message: string }> = [];
-  const utilization = stats.tokensUsed / effectiveBudget;
-  if (utilization >= 0.8)
+  const utilization = effectiveBudget > 0 ? stats.tokensUsed / effectiveBudget : null;
+  if (utilization !== null && utilization >= 0.8)
     warnings.push({
       code: "HIGH_UTILIZATION",
       message: "Conversation uses at least 80% of the effective budget.",
@@ -118,15 +119,9 @@ export function analyzeConversation(
     pinned: {
       messageCount: pinnedMessages.length,
       tokens: pinnedTokens,
-      fractionOfBudget: pinnedTokens / effectiveBudget,
+      fractionOfBudget: effectiveBudget > 0 ? pinnedTokens / effectiveBudget : null,
     },
-    largestMessages: messages
-      .map((message, index) => ({
-        index,
-        role: message.role,
-        tokens: createEstimateTokenizer().count(message.content) + 4,
-        preview: message.content.slice(0, PREVIEW_LIMIT),
-      }))
+    largestMessages: normalized
       .sort((a, b) => b.tokens - a.tokens)
       .slice(0, 5),
     warnings,
@@ -159,12 +154,18 @@ export async function compareStrategies(
       messagesEvicted: context.evicted.length,
       tokensKept: context.tokensUsed,
       tokensRemaining: context.tokensRemaining,
+      budgetUtilization: budget.effectiveBudget > 0 ? context.tokensUsed / budget.effectiveBudget : null,
       pinnedKept: context.messages.filter((message) => message.pinned).length,
+      pinnedEvicted: context.evicted.filter((message) => message.pinned).length,
       toolMessagesKept: context.messages.filter(
         (message) => message.role === "tool",
       ).length,
+      toolMessagesEvicted: context.evicted.filter((message) => message.role === "tool").length,
       oldestSurvivingMessageIndex: keptIndexes.size
         ? Math.min(...keptIndexes)
+        : null,
+      newestEvictedMessageIndex: context.evicted.length
+        ? Math.max(...context.evicted.map((message) => message.metadata?.analysisIndex as number))
         : null,
       ...(includeMessages
         ? {
@@ -180,7 +181,7 @@ export async function compareStrategies(
         : {}),
     });
   }
-  const differences = messages
+  const allDifferences = messages
     .map((_, index) => ({
       messageIndex: index,
       keptBy: [...keptByStrategy.entries()]
@@ -194,12 +195,14 @@ export async function compareStrategies(
       (difference) =>
         difference.keptBy.length > 0 && difference.evictedBy.length > 0,
     )
-    .slice(0, 50);
+  const differences = allDifferences.slice(0, 50);
   return {
     input: analyzeConversation(messages, maxTokens, reserve, model),
     strategies: results,
     differences,
-    resultsTruncated: differences.length < messages.length,
+    totalDifferences: allDifferences.length,
+    returnedDifferences: differences.length,
+    resultsTruncated: allDifferences.length > differences.length,
   };
 }
 
@@ -231,7 +234,7 @@ export function diagnoseBudget(
   if (analysis.pinned.messageCount)
     findings.push({
       code: "PINNED_CONTEXT_PRESENT",
-      severity: analysis.pinned.fractionOfBudget > 0.25 ? "warning" : "info",
+      severity: analysis.pinned.fractionOfBudget !== null && analysis.pinned.fractionOfBudget > 0.25 ? "warning" : "info",
       message: "Pinned context is present and consumes budget.",
       evidence: analysis.pinned,
     });
@@ -305,12 +308,8 @@ export function recommendStrategy(
       (name) => name !== recommended,
     ).map((name) => ({
       strategy: name,
-      tradeoff:
-        name === "slidingWindow"
-          ? "Preserves recent conversational turns."
-          : name === "priority"
-            ? "Uses explicit priority metadata."
-            : "Simple oldest-first eviction.",
+      summary: STRATEGY_INFO[name].summary,
+      tradeoffs: STRATEGY_INFO[name].tradeoffs,
     })),
   };
 }
