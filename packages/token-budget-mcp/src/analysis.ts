@@ -270,26 +270,41 @@ export function recommendStrategy(
   reserve: number,
   model?: string,
 ) {
-  const hasPriority = messages.some(
-    (message) => message.priority !== undefined && message.priority !== 0,
-  );
-  const hasTools = messages.some((message) => message.role === "tool");
-  const hasPinned = messages.some((message) => message.pinned);
-  const recommended: AnalysisStrategy =
-    hasPriority || hasTools || hasPinned ? "smartPriority" : "dropOldest";
+  const explicitPriorities = messages.filter((message) => message.priority !== undefined);
+  const priorityValues = [...new Set(explicitPriorities.map((message) => message.priority))];
+  const priorityMeaningful = priorityValues.length > 1;
+  const toolCount = messages.filter((message) => message.role === "tool").length;
+  const userTurns = messages.filter((message) => message.role === "user").length;
+  const pinnedCount = messages.filter((message) => message.pinned).length;
+  const scores: Record<AnalysisStrategy, number> = {
+    dropOldest: messages.length > 0 ? 2 : 0,
+    slidingWindow: userTurns >= 3 ? 3 : 0,
+    priority: explicitPriorities.length / Math.max(1, messages.length) >= 0.5 && priorityMeaningful ? 5 : 0,
+    smartPriority: 0,
+  };
+  if (!explicitPriorities.length) scores.dropOldest += 1;
+  if (userTurns >= 3 && !priorityMeaningful) scores.slidingWindow += 1;
+  if (toolCount >= 3) scores.smartPriority += 4;
+  if (pinnedCount >= 2) scores.smartPriority += 2;
+  if (pinnedCount >= 1 && toolCount >= 1) scores.smartPriority += 4;
+  if (priorityMeaningful) scores.smartPriority += 2;
+  const ranked = [...ANALYSIS_STRATEGIES].sort((a, b) => scores[b] - scores[a]);
+  const recommended = ranked[0] ?? "dropOldest";
+  const scoreMargin = scores[ranked[0] ?? "dropOldest"] - scores[ranked[1] ?? "dropOldest"];
+  const confidence = scoreMargin >= 4 ? "high" : scoreMargin >= 2 ? "medium" : "low";
   const reasons = [];
-  if (hasTools)
+  if (toolCount >= 3)
     reasons.push({
       code: "HAS_TOOL_RESULTS",
       message:
         "Tool-result history benefits from relationship-aware preservation.",
     });
-  if (hasPinned)
+  if (pinnedCount)
     reasons.push({
       code: "HAS_PINNED_CONTEXT",
       message: "Pinned context should be preserved when possible.",
     });
-  if (hasPriority)
+  if (priorityMeaningful)
     reasons.push({
       code: "HAS_PRIORITY_METADATA",
       message: "Meaningful priorities are present.",
@@ -302,7 +317,9 @@ export function recommendStrategy(
     });
   return {
     recommended,
-    confidence: reasons.length > 1 ? "high" : "medium",
+    confidence,
+    scores,
+    scoreMargin,
     reasons,
     alternatives: ANALYSIS_STRATEGIES.filter(
       (name) => name !== recommended,
