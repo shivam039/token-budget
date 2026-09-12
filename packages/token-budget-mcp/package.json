@@ -1,6 +1,6 @@
 {
   "name": "@shivam.dixit/token-budget-mcp",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "MCP server exposing token-budget as callable tools (create a budget, add messages, get the strategized context, explain a decision, truncate a tool result) — for testing and driving the library interactively from Claude Code, Claude Desktop, or any other MCP client.",
   "repository": {
     "type": "git",
