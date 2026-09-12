@@ -9,14 +9,14 @@ jobs:
         with: { node-version: 20 }
       - run: npm ci
       - name: Check health and readiness
-        env: { MCP_URL: "${{ secrets.MCP_URL }}" }
+        env: { MCP_BASE_URL: "${{ secrets.MCP_BASE_URL }}" }
         run: |
-          curl --fail --silent "$MCP_URL/healthz"; echo
-          curl --fail --silent "$MCP_URL/readyz"; echo
+          curl --fail --silent "$MCP_BASE_URL/healthz"; echo
+          curl --fail --silent "$MCP_BASE_URL/readyz"; echo
       - name: Run MCP smoke test
         env:
           {
-            MCP_URL: "${{ secrets.MCP_URL }}",
+            MCP_BASE_URL: "${{ secrets.MCP_BASE_URL }}",
             MCP_API_KEY: "${{ secrets.MCP_API_KEY }}",
           }
         run: npm run smoke:mcp

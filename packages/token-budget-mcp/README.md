@@ -77,7 +77,9 @@ claude mcp add token-budget -- node "$(pwd)/packages/token-budget-mcp/dist/cli.j
   "mcpServers": {
     "token-budget": {
       "command": "node",
-      "args": ["/absolute/path/to/token-budget/packages/token-budget-mcp/dist/cli.js"]
+      "args": [
+        "/absolute/path/to/token-budget/packages/token-budget-mcp/dist/cli.js"
+      ]
     }
   }
 }
@@ -160,7 +162,7 @@ disabled unless you explicitly set `EXPOSE_DEMO_KEY=1` — a self-hosted
 private instance never leaks its key just by existing).
 
 **Keeping a Render deployment up to date:** since this server holds live
-in-memory MCP sessions per connection, it deliberately does *not* use
+in-memory MCP sessions per connection, it deliberately does _not_ use
 Render's own auto-deploy — that has no path filter and would restart the
 process (dropping any live sessions) on every push to `main`, including
 changes to unrelated packages elsewhere in this monorepo. Instead,
@@ -174,25 +176,38 @@ One-time setup:
 2. In the GitHub repo: Settings → Secrets and variables → Actions → New
    repository secret → name it `RENDER_MCP_DEPLOY_HOOK_URL`, paste the URL.
 
-The workflow requires the deploy-hook secret, waits for `/readyz` to report
-the expected Git SHA, then runs the real MCP smoke test. Set `MCP_URL` and
-optional `MCP_API_KEY` GitHub secrets. Run `npm run smoke:mcp` locally to
+The workflow requires the deploy-hook and `MCP_BASE_URL` secrets, waits for
+`/readyz` to report the expected Git SHA, then runs the real MCP smoke test.
+Set optional `MCP_API_KEY` as a GitHub secret for private mode. Run
+`MCP_BASE_URL=https://your-host npm run smoke:mcp` locally to
 initialize, list tools, and invoke `truncate_tool_output`. A separate
 manual `verify-token-budget-mcp` workflow checks the live service without
 deploying. Sessions and budgets remain process-local and in-memory.
 
 ## Tools
 
-| Tool | Does |
-| --- | --- |
-| `create_budget` | Creates a session. `maxTokens` (or a recognized `model` name — see `MODEL_CONTEXT_WINDOWS` in the core package), `reserve`, `strategy` (`dropOldest` default, `slidingWindow`, `priority`, or `smartPriority`), `warningThreshold`. Returns `sessionId`. |
-| `add_message` | Appends a message to a session: `sessionId`, `role`, `content`, optional `pinned`/`priority`/`toolCallId`. |
-| `get_context` | Applies the session's strategy, returns the surviving messages, tokens used/remaining, and what was evicted. |
-| `explain` | The structured trace of the most recent `get_context` call — what was evicted/synthesized and why. |
-| `stats` | Current token usage and message counts, without applying the strategy. |
-| `truncate_tool_output` | Stateless — shrinks a piece of text to a token budget via `truncateToolOutput()`, no session needed. |
-| `list_sessions` | Every session id created so far in this process, with a stats summary. |
-| `remove_session` | Discards a session and its buffer. |
+### Strategy Lab
+
+The stateless Strategy Lab tools analyze a conversation directly, without
+creating a server-side budget session. They are deterministic and local: no
+LLM provider or API key is needed. For example, an MCP client can call
+`compare_strategies` with the conversation and `{ "maxTokens": 8000 }` to
+compare `dropOldest`, `slidingWindow`, `priority`, and `smartPriority`, then
+inspect retained counts and token usage. Related tools are
+`analyze_conversation`, `simulate_pressure`, `find_breakpoint`,
+`diagnose_budget`, and `recommend_strategy`; recommendations explain
+tradeoffs and are not prescriptive.
+
+| Tool                   | Does                                                                                                                                                                                                                                                     |
+| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `create_budget`        | Creates a session. `maxTokens` (or a recognized `model` name — see `MODEL_CONTEXT_WINDOWS` in the core package), `reserve`, `strategy` (`dropOldest` default, `slidingWindow`, `priority`, or `smartPriority`), `warningThreshold`. Returns `sessionId`. |
+| `add_message`          | Appends a message to a session: `sessionId`, `role`, `content`, optional `pinned`/`priority`/`toolCallId`.                                                                                                                                               |
+| `get_context`          | Applies the session's strategy, returns the surviving messages, tokens used/remaining, and what was evicted.                                                                                                                                             |
+| `explain`              | The structured trace of the most recent `get_context` call — what was evicted/synthesized and why.                                                                                                                                                       |
+| `stats`                | Current token usage and message counts, without applying the strategy.                                                                                                                                                                                   |
+| `truncate_tool_output` | Stateless — shrinks a piece of text to a token budget via `truncateToolOutput()`, no session needed.                                                                                                                                                     |
+| `list_sessions`        | Every session id created so far in this process, with a stats summary.                                                                                                                                                                                   |
+| `remove_session`       | Discards a session and its buffer.                                                                                                                                                                                                                       |
 
 Every session lives only for the running server process — nothing is
 persisted between restarts (`token-budget`'s own
@@ -202,7 +217,7 @@ persisted between restarts (`token-budget`'s own
 
 The `summarizeOldest` strategy takes an async summarizer callback you
 supply in your own code — there's no way for a single MCP tool call
-(plain JSON arguments in, plain JSON out) to *be* that callback. Use
+(plain JSON arguments in, plain JSON out) to _be_ that callback. Use
 `dropOldest`, `slidingWindow`, `priority`, or `smartPriority` here; reach
 for `summarizeOldest` directly in TypeScript when you need it.
 `smartPriority` itself is exposed without its own optional `condense`

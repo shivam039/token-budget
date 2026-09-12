@@ -1,9 +1,14 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 
-const endpoint = process.env.MCP_URL;
+const baseUrl = process.env.MCP_BASE_URL || process.env.MCP_URL;
+const endpoint = baseUrl
+  ? `${baseUrl.replace(/\/$/, "").replace(/\/mcp$/, "")}/mcp`
+  : undefined;
 if (!endpoint) {
-  console.error("MCP_URL is required");
+  console.error(
+    "MCP_BASE_URL is required (MCP_URL is accepted as a temporary alias)",
+  );
   process.exit(2);
 }
 const headers = process.env.MCP_API_KEY
@@ -34,6 +39,24 @@ try {
   const payload = JSON.parse(text);
   for (const field of ["truncated", "tokensBefore", "tokensAfter"])
     if (!(field in payload)) throw new Error(`tool response missing ${field}`);
+  if (process.env.MCP_SMOKE_LEVEL === "diagnostic") {
+    for (const name of ["analyze_conversation", "compare_strategies"])
+      if (!names.has(name)) throw new Error(`missing diagnostic tool: ${name}`);
+    const args = {
+      messages: [{ role: "user", content: "smoke diagnostic" }],
+      maxTokens: 100,
+    };
+    for (const name of ["analyze_conversation", "compare_strategies"]) {
+      const diagnostic = await client.callTool({ name, arguments: args });
+      if (diagnostic.isError === true)
+        throw new Error(`${name} returned an error`);
+      const diagnosticText = diagnostic.content.find(
+        (part) => part.type === "text",
+      )?.text;
+      if (!diagnosticText || !JSON.parse(diagnosticText))
+        throw new Error(`${name} returned malformed output`);
+    }
+  }
   console.log(
     `MCP smoke test passed: ${tools.length} tools, truncate_tool_output succeeded`,
   );
