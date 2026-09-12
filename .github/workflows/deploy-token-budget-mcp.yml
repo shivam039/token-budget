@@ -18,18 +18,20 @@ on:
   push:
     branches: [main]
     paths:
-      - 'packages/token-budget/src/**'
-      - 'packages/token-budget-mcp/**'
-      - '.github/workflows/deploy-token-budget-mcp.yml'
+      - "packages/token-budget/src/**"
+      - "packages/token-budget-mcp/**"
+      - ".github/workflows/deploy-token-budget-mcp.yml"
   workflow_dispatch:
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
       - name: Require Render deploy hook
         run: |
           test -n "${{ secrets.RENDER_MCP_DEPLOY_HOOK_URL }}" || { echo "RENDER_MCP_DEPLOY_HOOK_URL is required; configure it in GitHub Actions secrets."; exit 1; }
+          test -n "${{ secrets.MCP_URL }}" || { echo "MCP_URL is required for deployment verification; configure it in GitHub Actions secrets."; exit 1; }
 
       - name: Trigger Render deploy
         run: |
@@ -40,6 +42,30 @@ jobs:
             exit 1
           fi
           echo "Triggered a new Render deploy for token-budget-mcp (hook returned HTTP $status)."
+
+      - name: Wait for expected revision
+        env:
+          MCP_URL: ${{ secrets.MCP_URL }}
+          EXPECTED_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          last_status="000"
+          last_revision="unknown"
+          for attempt in $(seq 1 40); do
+            response=$(curl -sS --max-time 15 -w '\n%{http_code}' "$MCP_URL/readyz" || true)
+            status=$(printf '%s\n' "$response" | tail -n 1)
+            payload=$(printf '%s\n' "$response" | sed '$d')
+            revision=$(printf '%s' "$payload" | jq -r '.revision // "unknown"' 2>/dev/null || echo unknown)
+            last_status="$status"
+            last_revision="$revision"
+            echo "attempt $attempt/40: HTTP $status, revision $revision, expected $EXPECTED_SHA"
+            if [ "$status" = "200" ] && printf '%s' "$payload" | jq -e --arg sha "$EXPECTED_SHA" '.status == "ready" and .revision == $sha' >/dev/null 2>&1; then
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "Timed out waiting for revision $EXPECTED_SHA (last HTTP $last_status, revision $last_revision)"
+          exit 1
 
       - uses: actions/setup-node@v4
         with: { node-version: 20 }
