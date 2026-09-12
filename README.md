@@ -397,7 +397,7 @@ against every provider, and never evicts anything you've marked `pinned`.
 | [`packages/token-budget-pricing`](./packages/token-budget-pricing) | Static per-model pricing table / `CostModel` for cost accounting. |
 | [`packages/token-budget-otel`](./packages/token-budget-otel) | OpenTelemetry instrumentation: spans + token/cost/eviction counters. |
 | [`packages/token-budget-embeddings`](./packages/token-budget-embeddings) | Reference cosine-similarity `Scorer` for the `semanticRelevance` strategy. |
-| [`packages/token-budget-mcp`](./packages/token-budget-mcp) | MCP server exposing token-budget as callable tools, for testing and driving it from Claude Code/Desktop or any other MCP client. |
+| [`packages/token-budget-mcp`](./packages/token-budget-mcp) | MCP server exposing token-budget as callable tools for Claude Code/Desktop, Cursor, OpenAI Agents SDK, custom agents, and other MCP clients. See the [AI integration guide](./docs/MCP-INTEGRATIONS.md). |
 | [`packages/token-budget-devtools`](./packages/token-budget-devtools) | Local Vite app for visually inspecting a `serialize()` dump. Not published to npm. |
 | [`packages/token-budget-playground`](./packages/token-budget-playground) | Interactive Hugging Face Space demo — edit a conversation, set a budget, compare strategies, inspect `explain()`. Not published to npm. |
 | [`packages/token-budget-py`](./packages/token-budget-py) | Python port. **Work in progress** — partial API, see its own README for exact scope. |
@@ -423,6 +423,7 @@ each package's own README for its API, usage, and known limitations.
 - [`docs/strategy-guide.md`](./docs/strategy-guide.md) — which strategy for which situation, when NOT to use each, and how to write a custom one.
 - [`docs/explainability.md`](./docs/explainability.md) — `explain()` in depth: real output, live events, what it doesn't cover.
 - [`docs/model-budgets.md`](./docs/model-budgets.md) — the `maxTokens`/`model` precedence, exactly.
+- [`docs/MCP-INTEGRATIONS.md`](./docs/MCP-INTEGRATIONS.md) — connect `token-budget-mcp` to Claude Code/Desktop, Cursor, OpenAI Agents SDK, custom agents, and other MCP-capable hosts over stdio or Streamable HTTP.
 - [`docs/architecture-patterns.md`](./docs/architecture-patterns.md) — priority-tier blueprints for a coding agent, a RAG agent, and a support agent.
 - [`docs/production-checklist.md`](./docs/production-checklist.md) — what to verify before shipping.
 - [`docs/playground.md`](./docs/playground.md) — what the interactive playground demonstrates (and doesn't), and how to reproduce it.
