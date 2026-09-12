@@ -1,20 +1,319 @@
-import { randomUUID, timingSafeEqual, webcrypto } from 'node:crypto';
-import { createServer as createNodeHttpServer, type IncomingMessage, type ServerResponse } from 'node:http';
-import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
-import { isInitializeRequest } from '@modelcontextprotocol/sdk/types.js';
-import { createServer as createMcpServer } from './server.js';
+import { randomUUID, timingSafeEqual, webcrypto } from "node:crypto";
+import {
+  createServer as createNodeHttpServer,
+  type IncomingMessage,
+  type ServerResponse,
+} from "node:http";
+import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
+import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
+import { createServer as createMcpServer } from "./server.js";
+import { MCP_VERSION } from "./version.js";
 
-if (!globalThis.crypto) (globalThis as Record<string, unknown>).crypto = webcrypto;
+if (!globalThis.crypto)
+  (globalThis as Record<string, unknown>).crypto = webcrypto;
 
-export interface HttpServerConfig { port:number; apiKey:string; maxConnections:number; maxSessionsPerConnection:number; maxMessagesPerSession:number; maxContentLength:number; exposeDemoKey:boolean; publicDemoMode?:boolean; connectionIdleTtlMs?:number; shutdownGraceMs?:number; rateLimitWindowMs?:number; rateLimitMaxRequests?:number; maxRequestBodyBytes?:number; revision?:string; }
-function integer(env:NodeJS.ProcessEnv,name:string,fallback:number,min=1){const raw=env[name];if(!raw)return fallback;const n=Number(raw);if(!Number.isInteger(n)||n<min)throw new Error(`${name} must be an integer >= ${min}, got "${raw}".`);return n;}
-export function readHttpConfig(env=process.env):HttpServerConfig {const publicDemoMode=env.PUBLIC_DEMO_MODE==='1'||env.PUBLIC_DEMO_MODE==='true';const apiKey=env.MCP_API_KEY??'';if(!apiKey&&!publicDemoMode)throw new Error('MCP_API_KEY environment variable is required unless PUBLIC_DEMO_MODE is enabled.');return {port:integer(env,'PORT',3000,0),apiKey,maxConnections:integer(env,'MAX_CONNECTIONS',20),maxSessionsPerConnection:integer(env,'MAX_SESSIONS_PER_CONNECTION',20),maxMessagesPerSession:integer(env,'MAX_MESSAGES_PER_SESSION',100),maxContentLength:integer(env,'MAX_CONTENT_LENGTH',20000),exposeDemoKey:env.EXPOSE_DEMO_KEY==='1'||env.EXPOSE_DEMO_KEY==='true',publicDemoMode,connectionIdleTtlMs:integer(env,'CONNECTION_IDLE_TTL_MS',900000),shutdownGraceMs:integer(env,'SHUTDOWN_GRACE_MS',10000,0),rateLimitWindowMs:integer(env,'RATE_LIMIT_WINDOW_MS',60000),rateLimitMaxRequests:integer(env,'RATE_LIMIT_MAX_REQUESTS',120),maxRequestBodyBytes:integer(env,'MAX_REQUEST_BODY_BYTES',1000000),revision:env.GIT_SHA||env.RENDER_GIT_COMMIT||'unknown'};}
-function sendJson(res:ServerResponse,status:number,body:unknown,headers:Record<string,string>={}){const p=JSON.stringify(body);res.writeHead(status,{'content-type':'application/json','content-length':Buffer.byteLength(p),...headers});res.end(p);}
-function validKey(a:string,b:string){const x=Buffer.from(a),y=Buffer.from(b);return x.length===y.length&&timingSafeEqual(x,y);}
-function log(event:string,data:Record<string,unknown>={}){console.error(JSON.stringify({timestamp:new Date().toISOString(),event,...data}));}
-function readBody(req:IncomingMessage,limit:number):Promise<unknown>{return new Promise((resolve,reject)=>{const chunks:Buffer[]=[];let size=0,done=false;const fail=(e:Error)=>{if(!done){done=true;reject(e);}};req.on('data',(c:Buffer)=>{size+=c.length;if(size>limit){req.resume();fail(Object.assign(new Error('body too large'),{code:'TOO_LARGE'}));}else chunks.push(c);});req.on('end',()=>{if(done)return;done=true;const s=Buffer.concat(chunks).toString();if(!s)return resolve(undefined);try{resolve(JSON.parse(s));}catch{reject(new Error('Invalid JSON body'));}});req.on('error',fail);});}
-export function startHttpServer(input:HttpServerConfig=readHttpConfig()):ReturnType<typeof createNodeHttpServer>{const c={...input,connectionIdleTtlMs:input.connectionIdleTtlMs??900000,shutdownGraceMs:input.shutdownGraceMs??10000,rateLimitWindowMs:input.rateLimitWindowMs??60000,rateLimitMaxRequests:input.rateLimitMaxRequests??120,maxRequestBodyBytes:input.maxRequestBodyBytes??1000000,revision:input.revision??'unknown'};const started=Date.now();let shuttingDown=false;type Entry={transport:StreamableHTTPServerTransport;server:Awaited<ReturnType<typeof createMcpServer>>;last:number};const connections=new Map<string,Entry>();const limits=new Map<string,{at:number;count:number}>();const allowed=(req:IncomingMessage)=>{const key=req.socket.remoteAddress??'unknown',now=Date.now(),v=limits.get(key);if(!v||now-v.at>=c.rateLimitWindowMs){limits.set(key,{at:now,count:1});return true;}v.count++;return v.count<=c.rateLimitMaxRequests;};const auth=(req:IncomingMessage,res:ServerResponse)=>{if(c.publicDemoMode)return true;const v=req.headers.authorization?.startsWith('Bearer ')?req.headers.authorization.slice(7):'';if(!v||!validKey(v,c.apiKey)){log('authentication_failed');sendJson(res,401,{error:'Unauthorized'});return false;}return true;};const cleanup=async(id:string,event='connection_closed')=>{const e=connections.get(id);if(!e)return;connections.delete(id);await Promise.allSettled([e.transport.close(),e.server.close()]);log(event,{connectionCount:connections.size,revision:c.revision});};const timer=setInterval(()=>{const cutoff=Date.now()-c.connectionIdleTtlMs;for(const [id,e] of connections)if(e.last<cutoff)void cleanup(id,'connection_expired');for(const [k,v] of limits)if(Date.now()-v.at>c.rateLimitWindowMs*2)limits.delete(k);},Math.max(1000,Math.min(c.connectionIdleTtlMs,60000)));timer.unref?.();
-const handle=async(req:IncomingMessage,res:ServerResponse)=>{if(!auth(req,res))return;if(!allowed(req)){log('rate_limited');sendJson(res,429,{error:'Too many requests'},{'retry-after':String(Math.ceil(c.rateLimitWindowMs/1000))});return;}if(shuttingDown){sendJson(res,503,{error:'Server is shutting down'});return;}const id=typeof req.headers['mcp-session-id']==='string'?req.headers['mcp-session-id']:undefined;const existing=id?connections.get(id):undefined;if(existing){existing.last=Date.now();await existing.transport.handleRequest(req,res);return;}if(req.method!=='POST')return sendJson(res,400,{jsonrpc:'2.0',id:null,error:{code:-32000,message:'No valid session ID provided'}});let parsed;try{parsed=await readBody(req,c.maxRequestBodyBytes);}catch(e){return sendJson(res,(e as {code?:string}).code==='TOO_LARGE'?413:400,{jsonrpc:'2.0',id:null,error:{code:-32700,message:'Parse error'}});}if(!isInitializeRequest(parsed))return sendJson(res,400,{jsonrpc:'2.0',id:null,error:{code:-32000,message:'No valid session ID provided'}});if(connections.size>=c.maxConnections){log('capacity_rejected');return sendJson(res,503,{error:'Server at capacity'});}let transport!:StreamableHTTPServerTransport;const server=createMcpServer({maxSessions:c.maxSessionsPerConnection,maxMessagesPerSession:c.maxMessagesPerSession,maxContentLength:c.maxContentLength});transport=new StreamableHTTPServerTransport({sessionIdGenerator:()=>randomUUID(),onsessioninitialized:id=>{connections.set(id,{transport,server,last:Date.now()});log('connection_initialized',{connectionCount:connections.size});},onsessionclosed:id=>void cleanup(id)});await server.connect(transport);await transport.handleRequest(req,res,parsed);};
-const meta=()=>({service:'token-budget-mcp',version:'0.1.1',revision:c.revision,uptimeSeconds:Math.floor((Date.now()-started)/1000),activeConnections:connections.size,maxConnections:c.maxConnections,timestamp:new Date().toISOString()});
-const http=createNodeHttpServer((req,res)=>{const path=new URL(req.url??'/','http://localhost').pathname;if(path==='/healthz')return sendJson(res,200,{status:'ok'});if(path==='/readyz')return sendJson(res,shuttingDown?503:200,{...meta(),status:shuttingDown?'shutting_down':'ready'});if(path==='/demo-key'&&c.exposeDemoKey)return sendJson(res,200,{apiKey:c.apiKey});if(path==='/mcp')return void handle(req,res).catch(()=>{if(!res.headersSent)sendJson(res,500,{error:'Internal error'});});sendJson(res,404,{error:'Not found'});});
-const shutdown=()=>{if(shuttingDown)return;shuttingDown=true;log('shutdown_started');const finish=async()=>{clearInterval(timer);await Promise.all([...connections.keys()].map(id=>cleanup(id)));await new Promise<void>(r=>http.close(()=>r()));process.removeListener('SIGTERM',shutdown);process.removeListener('SIGINT',shutdown);log('shutdown_completed');};void Promise.race([finish(),new Promise<void>(r=>setTimeout(r,c.shutdownGraceMs))]);};process.once('SIGTERM',shutdown);process.once('SIGINT',shutdown);http.once('close',()=>{clearInterval(timer);process.removeListener('SIGTERM',shutdown);process.removeListener('SIGINT',shutdown);});http.listen(c.port,()=>log('server_started',{revision:c.revision,maxConnections:c.maxConnections}));return http;}
+export interface HttpServerConfig {
+  port: number;
+  apiKey: string;
+  maxConnections: number;
+  maxSessionsPerConnection: number;
+  maxMessagesPerSession: number;
+  maxContentLength: number;
+  exposeDemoKey: boolean;
+  publicDemoMode?: boolean;
+  connectionIdleTtlMs?: number;
+  shutdownGraceMs?: number;
+  rateLimitWindowMs?: number;
+  rateLimitMaxRequests?: number;
+  maxRequestBodyBytes?: number;
+  revision?: string;
+}
+function integer(
+  env: NodeJS.ProcessEnv,
+  name: string,
+  fallback: number,
+  min = 1,
+) {
+  const raw = env[name];
+  if (!raw) return fallback;
+  const n = Number(raw);
+  if (!Number.isInteger(n) || n < min)
+    throw new Error(`${name} must be an integer >= ${min}, got "${raw}".`);
+  return n;
+}
+export function readHttpConfig(env = process.env): HttpServerConfig {
+  const publicDemoMode =
+    env.PUBLIC_DEMO_MODE === "1" || env.PUBLIC_DEMO_MODE === "true";
+  const apiKey = env.MCP_API_KEY ?? "";
+  const exposeDemoKey =
+    (env.EXPOSE_DEMO_KEY === "1" || env.EXPOSE_DEMO_KEY === "true") &&
+    apiKey.length > 0;
+  if (!apiKey && !publicDemoMode)
+    throw new Error(
+      "MCP_API_KEY environment variable is required unless PUBLIC_DEMO_MODE is enabled.",
+    );
+  return {
+    port: integer(env, "PORT", 3000, 0),
+    apiKey,
+    maxConnections: integer(env, "MAX_CONNECTIONS", 20),
+    maxSessionsPerConnection: integer(env, "MAX_SESSIONS_PER_CONNECTION", 20),
+    maxMessagesPerSession: integer(env, "MAX_MESSAGES_PER_SESSION", 100),
+    maxContentLength: integer(env, "MAX_CONTENT_LENGTH", 20000),
+    exposeDemoKey,
+    publicDemoMode,
+    connectionIdleTtlMs: integer(env, "CONNECTION_IDLE_TTL_MS", 900000),
+    shutdownGraceMs: integer(env, "SHUTDOWN_GRACE_MS", 10000, 0),
+    rateLimitWindowMs: integer(env, "RATE_LIMIT_WINDOW_MS", 60000),
+    rateLimitMaxRequests: integer(env, "RATE_LIMIT_MAX_REQUESTS", 120),
+    maxRequestBodyBytes: integer(env, "MAX_REQUEST_BODY_BYTES", 1000000),
+    revision: env.GIT_SHA || env.RENDER_GIT_COMMIT || "unknown",
+  };
+}
+function sendJson(
+  res: ServerResponse,
+  status: number,
+  body: unknown,
+  headers: Record<string, string> = {},
+) {
+  const p = JSON.stringify(body);
+  res.writeHead(status, {
+    "content-type": "application/json",
+    "content-length": Buffer.byteLength(p),
+    ...headers,
+  });
+  res.end(p);
+}
+function validKey(a: string, b: string) {
+  const x = Buffer.from(a),
+    y = Buffer.from(b);
+  return x.length === y.length && timingSafeEqual(x, y);
+}
+function log(event: string, data: Record<string, unknown> = {}) {
+  console.error(
+    JSON.stringify({ timestamp: new Date().toISOString(), event, ...data }),
+  );
+}
+function readBody(req: IncomingMessage, limit: number): Promise<unknown> {
+  return new Promise((resolve, reject) => {
+    const chunks: Buffer[] = [];
+    let size = 0,
+      done = false;
+    const fail = (e: Error) => {
+      if (!done) {
+        done = true;
+        reject(e);
+      }
+    };
+    req.on("data", (c: Buffer) => {
+      size += c.length;
+      if (size > limit) {
+        req.resume();
+        fail(Object.assign(new Error("body too large"), { code: "TOO_LARGE" }));
+      } else chunks.push(c);
+    });
+    req.on("end", () => {
+      if (done) return;
+      done = true;
+      const s = Buffer.concat(chunks).toString();
+      if (!s) return resolve(undefined);
+      try {
+        resolve(JSON.parse(s));
+      } catch {
+        reject(new Error("Invalid JSON body"));
+      }
+    });
+    req.on("error", fail);
+  });
+}
+export function startHttpServer(
+  input: HttpServerConfig = readHttpConfig(),
+): ReturnType<typeof createNodeHttpServer> {
+  const c = {
+    ...input,
+    connectionIdleTtlMs: input.connectionIdleTtlMs ?? 900000,
+    shutdownGraceMs: input.shutdownGraceMs ?? 10000,
+    rateLimitWindowMs: input.rateLimitWindowMs ?? 60000,
+    rateLimitMaxRequests: input.rateLimitMaxRequests ?? 120,
+    maxRequestBodyBytes: input.maxRequestBodyBytes ?? 1000000,
+    revision: input.revision ?? "unknown",
+  };
+  const started = Date.now();
+  let shuttingDown = false;
+  type Entry = {
+    transport: StreamableHTTPServerTransport;
+    server: Awaited<ReturnType<typeof createMcpServer>>;
+    last: number;
+  };
+  const connections = new Map<string, Entry>();
+  const limits = new Map<string, { at: number; count: number }>();
+  const allowed = (req: IncomingMessage) => {
+    const key = req.socket.remoteAddress ?? "unknown",
+      now = Date.now(),
+      v = limits.get(key);
+    if (!v || now - v.at >= c.rateLimitWindowMs) {
+      limits.set(key, { at: now, count: 1 });
+      return true;
+    }
+    v.count++;
+    return v.count <= c.rateLimitMaxRequests;
+  };
+  const auth = (req: IncomingMessage, res: ServerResponse) => {
+    if (c.publicDemoMode) return true;
+    const v = req.headers.authorization?.startsWith("Bearer ")
+      ? req.headers.authorization.slice(7)
+      : "";
+    if (!v || !validKey(v, c.apiKey)) {
+      log("authentication_failed");
+      sendJson(res, 401, { error: "Unauthorized" });
+      return false;
+    }
+    return true;
+  };
+  const cleanup = async (id: string, event = "connection_closed") => {
+    const e = connections.get(id);
+    if (!e) return;
+    connections.delete(id);
+    await Promise.allSettled([e.transport.close(), e.server.close()]);
+    log(event, { connectionCount: connections.size, revision: c.revision });
+  };
+  const timer = setInterval(
+    () => {
+      const cutoff = Date.now() - c.connectionIdleTtlMs;
+      for (const [id, e] of connections)
+        if (e.last < cutoff) void cleanup(id, "connection_expired");
+      for (const [k, v] of limits)
+        if (Date.now() - v.at > c.rateLimitWindowMs * 2) limits.delete(k);
+    },
+    Math.max(1000, Math.min(c.connectionIdleTtlMs, 60000)),
+  );
+  timer.unref?.();
+  const handle = async (req: IncomingMessage, res: ServerResponse) => {
+    if (!auth(req, res)) return;
+    if (!allowed(req)) {
+      log("rate_limited");
+      sendJson(
+        res,
+        429,
+        { error: "Too many requests" },
+        { "retry-after": String(Math.ceil(c.rateLimitWindowMs / 1000)) },
+      );
+      return;
+    }
+    if (shuttingDown) {
+      sendJson(res, 503, { error: "Server is shutting down" });
+      return;
+    }
+    const id =
+      typeof req.headers["mcp-session-id"] === "string"
+        ? req.headers["mcp-session-id"]
+        : undefined;
+    const existing = id ? connections.get(id) : undefined;
+    if (existing) {
+      existing.last = Date.now();
+      await existing.transport.handleRequest(req, res);
+      return;
+    }
+    if (req.method !== "POST")
+      return sendJson(res, 400, {
+        jsonrpc: "2.0",
+        id: null,
+        error: { code: -32000, message: "No valid session ID provided" },
+      });
+    let parsed;
+    try {
+      parsed = await readBody(req, c.maxRequestBodyBytes);
+    } catch (e) {
+      return sendJson(
+        res,
+        (e as { code?: string }).code === "TOO_LARGE" ? 413 : 400,
+        {
+          jsonrpc: "2.0",
+          id: null,
+          error: { code: -32700, message: "Parse error" },
+        },
+      );
+    }
+    if (!isInitializeRequest(parsed))
+      return sendJson(res, 400, {
+        jsonrpc: "2.0",
+        id: null,
+        error: { code: -32000, message: "No valid session ID provided" },
+      });
+    if (connections.size >= c.maxConnections) {
+      log("capacity_rejected");
+      return sendJson(res, 503, { error: "Server at capacity" });
+    }
+    let transport!: StreamableHTTPServerTransport;
+    const server = createMcpServer({
+      maxSessions: c.maxSessionsPerConnection,
+      maxMessagesPerSession: c.maxMessagesPerSession,
+      maxContentLength: c.maxContentLength,
+    });
+    transport = new StreamableHTTPServerTransport({
+      sessionIdGenerator: () => randomUUID(),
+      onsessioninitialized: (id) => {
+        connections.set(id, { transport, server, last: Date.now() });
+        log("connection_initialized", { connectionCount: connections.size });
+      },
+      onsessionclosed: (id) => void cleanup(id),
+    });
+    await server.connect(transport);
+    await transport.handleRequest(req, res, parsed);
+  };
+  const meta = () => ({
+    service: "token-budget-mcp",
+    version: MCP_VERSION,
+    revision: c.revision,
+    uptimeSeconds: Math.floor((Date.now() - started) / 1000),
+    activeConnections: connections.size,
+    maxConnections: c.maxConnections,
+    timestamp: new Date().toISOString(),
+  });
+  const http = createNodeHttpServer((req, res) => {
+    const path = new URL(req.url ?? "/", "http://localhost").pathname;
+    if (path === "/healthz") return sendJson(res, 200, { status: "ok" });
+    if (path === "/readyz")
+      return sendJson(res, shuttingDown ? 503 : 200, {
+        ...meta(),
+        status: shuttingDown ? "shutting_down" : "ready",
+      });
+    if (path === "/demo-key" && c.exposeDemoKey)
+      return sendJson(res, 200, { apiKey: c.apiKey });
+    if (path === "/mcp")
+      return void handle(req, res).catch(() => {
+        if (!res.headersSent) sendJson(res, 500, { error: "Internal error" });
+      });
+    sendJson(res, 404, { error: "Not found" });
+  });
+  const shutdown = () => {
+    if (shuttingDown) return;
+    shuttingDown = true;
+    log("shutdown_started");
+    const finish = async () => {
+      clearInterval(timer);
+      await Promise.all([...connections.keys()].map((id) => cleanup(id)));
+      await new Promise<void>((r) => http.close(() => r()));
+      process.removeListener("SIGTERM", shutdown);
+      process.removeListener("SIGINT", shutdown);
+      log("shutdown_completed");
+    };
+    void Promise.race([
+      finish(),
+      new Promise<void>((r) => setTimeout(r, c.shutdownGraceMs)),
+    ]);
+  };
+  process.once("SIGTERM", shutdown);
+  process.once("SIGINT", shutdown);
+  http.once("close", () => {
+    clearInterval(timer);
+    process.removeListener("SIGTERM", shutdown);
+    process.removeListener("SIGINT", shutdown);
+  });
+  http.listen(c.port, () =>
+    log("server_started", {
+      revision: c.revision,
+      maxConnections: c.maxConnections,
+    }),
+  );
+  return http;
+}
