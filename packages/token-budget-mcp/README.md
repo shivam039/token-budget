@@ -209,6 +209,18 @@ inspect retained counts and token usage. Related tools are
 `diagnose_budget`, and `recommend_strategy`; recommendations explain
 tradeoffs and are not prescriptive.
 
+Strategy Lab analysis results include bounded, deterministic metrics for
+system-message cost, conversation turns, tool usage, and explicit priority
+variation. Turn metrics include turn counts, tool cycles, average and longest
+turn size, and the token share of the two most recent turns. Tool metrics
+include tool-message/token totals, token fraction, tool-call-id coverage, and
+conservative cycle/pairing counts. Priority metrics distinguish an explicitly
+provided priority (including `0`) from the default priority and report its
+coverage and variation. These metrics are also used by
+`recommend_strategy`; a single incidental tool result does not by itself make
+`smartPriority` the recommendation. Breakpoint estimates remain finite when
+the supplied future-message size is zero.
+
 | Tool                   | Does                                                                                                                                                                                                                                                     |
 | ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `create_budget`        | Creates a session. `maxTokens` (or a recognized `model` name — see `MODEL_CONTEXT_WINDOWS` in the core package), `reserve`, `strategy` (`dropOldest` default, `slidingWindow`, `priority`, or `smartPriority`), `warningThreshold`. Returns `sessionId`. |
