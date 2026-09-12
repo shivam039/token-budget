@@ -87,9 +87,20 @@ claude mcp add token-budget -- node "$(pwd)/packages/token-budget-mcp/dist/cli.j
 
 ## Use it with any other MCP client
 
-The server speaks standard MCP over stdio — point any client's stdio
-transport at `npx @shivam.dixit/token-budget-mcp` (or a global install's
-`token-budget-mcp` binary directly).
+The server speaks standard MCP over stdio and Streamable HTTP. Point a
+local client's stdio transport at `npx @shivam.dixit/token-budget-mcp`,
+or point a remote-capable client at `https://your-host/mcp`.
+
+**The model itself does not need special token-budget support.** MCP is a
+capability of the host application or agent runtime. GPT, Claude, Gemini,
+and other models can all use the same server when the application around
+them supports MCP.
+
+For copy-paste setup and architecture examples covering **Claude Code,
+Claude Desktop, Cursor, other MCP-native clients, OpenAI Agents SDK
+(JavaScript/TypeScript and Python), custom agents, Vercel AI SDK,
+LangChain, and hosted chat products**, see the complete
+[AI client integration guide](../../docs/MCP-INTEGRATIONS.md).
 
 ## Hosting it remotely (Streamable HTTP)
 
