@@ -1,4 +1,5 @@
 import { randomUUID, timingSafeEqual, webcrypto } from "node:crypto";
+import { isIP } from "node:net";
 import {
   createServer as createNodeHttpServer,
   type IncomingMessage,
@@ -27,6 +28,7 @@ export interface HttpServerConfig {
   rateLimitMaxRequests?: number;
   maxRequestBodyBytes?: number;
   revision?: string;
+  trustProxyHeaders?: boolean;
 }
 function integer(
   env: NodeJS.ProcessEnv,
@@ -67,6 +69,7 @@ export function readHttpConfig(env = process.env): HttpServerConfig {
     rateLimitMaxRequests: integer(env, "RATE_LIMIT_MAX_REQUESTS", 120),
     maxRequestBodyBytes: integer(env, "MAX_REQUEST_BODY_BYTES", 1000000),
     revision: env.GIT_SHA || env.RENDER_GIT_COMMIT || "unknown",
+    trustProxyHeaders: env.TRUST_PROXY_HEADERS === "true" || env.TRUST_PROXY_HEADERS === "1",
   };
 }
 function sendJson(
@@ -136,6 +139,7 @@ export function startHttpServer(
     rateLimitMaxRequests: input.rateLimitMaxRequests ?? 120,
     maxRequestBodyBytes: input.maxRequestBodyBytes ?? 1000000,
     revision: input.revision ?? "unknown",
+    trustProxyHeaders: input.trustProxyHeaders ?? false,
   };
   const started = Date.now();
   let shuttingDown = false;
@@ -145,9 +149,12 @@ export function startHttpServer(
     last: number;
   };
   const connections = new Map<string, Entry>();
+  const sockets = new Set<import("node:net").Socket>();
   const limits = new Map<string, { at: number; count: number }>();
   const allowed = (req: IncomingMessage) => {
-    const key = req.socket.remoteAddress ?? "unknown",
+    const forwarded = c.trustProxyHeaders && req.headers["x-forwarded-for"];
+    const candidate = typeof forwarded === "string" ? forwarded.split(",")[0]?.trim() : "";
+    const key = candidate && isIP(candidate) ? candidate : (req.socket.remoteAddress ?? "unknown"),
       now = Date.now(),
       v = limits.get(key);
     if (!v || now - v.at >= c.rateLimitWindowMs) {
@@ -285,6 +292,10 @@ export function startHttpServer(
       });
     sendJson(res, 404, { error: "Not found" });
   });
+  http.on("connection", (socket) => {
+    sockets.add(socket);
+    socket.once("close", () => sockets.delete(socket));
+  });
   const shutdown = () => {
     if (shuttingDown) return;
     shuttingDown = true;
@@ -297,10 +308,16 @@ export function startHttpServer(
       process.removeListener("SIGINT", shutdown);
       log("shutdown_completed");
     };
-    void Promise.race([
-      finish(),
-      new Promise<void>((r) => setTimeout(r, c.shutdownGraceMs)),
-    ]);
+    let forced = false;
+    const timeout = setTimeout(() => {
+      forced = true;
+      log("shutdown_forced");
+      for (const socket of sockets) socket.destroy();
+      void http.close();
+    }, c.shutdownGraceMs);
+    void finish().finally(() => {
+      if (!forced) clearTimeout(timeout);
+    });
   };
   process.once("SIGTERM", shutdown);
   process.once("SIGINT", shutdown);
