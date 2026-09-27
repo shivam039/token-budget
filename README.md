@@ -487,7 +487,20 @@ is:
 - [`docs/DO_NOT_BUILD_YET.md`](./docs/DO_NOT_BUILD_YET.md) — the explicit scope-creep guard (no VS Code extension, no Python rewrite, no MCP *client* middleware, etc. — and why).
 - [`docs/MCP.md`](./docs/MCP.md) — why an MCP server isn't the right *production* consumption path, and what [`token-budget-mcp`](./packages/token-budget-mcp) actually is instead (a testing/demo surface). [`docs/PYTHON_ROADMAP.md`](./docs/PYTHON_ROADMAP.md) — a second deferred-until-evidence decision, reasoned through.
 - [`docs/FIRST_USERS.md`](./docs/FIRST_USERS.md), [`docs/USER_VALIDATION.md`](./docs/USER_VALIDATION.md), and [`docs/USER_FEEDBACK_TEMPLATE.md`](./docs/USER_FEEDBACK_TEMPLATE.md) — how this project finds its first real users, tracks the funnel, and turns a conversation into a product decision.
-- [`docs/RELEASE_STATUS.md`](./docs/RELEASE_STATUS.md) — exact GitHub-vs-npm version state for every publishable package, regenerated (not hand-typed) on every audit.
+- [`docs/RELEASE_STATUS.md`](./docs/RELEASE_STATUS.md) — package versioning policy and release verification commands.
+
+## Early-adopter feedback
+
+Trying token-budget in a real agent? Early reports help prioritize what
+gets improved next. Use the template that matches your situation:
+
+- [Report a bug](https://github.com/shivam039/token-budget/issues/new?template=bug_report.md) with the package version, reproduction steps, and runtime.
+- [Get integration help](https://github.com/shivam039/token-budget/issues/new?template=integration_help.md) for a provider, SDK, or agent loop.
+- [Suggest an improvement](https://github.com/shivam039/token-budget/issues/new?template=feature_request.md) with the problem and any workaround.
+
+Please remove credentials, private prompts, and customer data from
+examples and logs before submitting. See [contributing](./CONTRIBUTING.md)
+for code and adapter contributions.
 
 ## Status
 

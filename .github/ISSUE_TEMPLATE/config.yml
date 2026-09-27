@@ -1,5 +1,5 @@
 blank_issues_enabled: true
 contact_links:
   - name: Question / usage help
-    url: https://github.com/shivam039/token-budget/discussions
-    about: Ask about a specific use case before filing a bug — often faster than an issue.
+    url: https://github.com/shivam039/token-budget/issues/new?template=integration_help.md
+    about: Ask for help mapping token-budget into a provider or agent loop.

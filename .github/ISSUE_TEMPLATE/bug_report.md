@@ -8,6 +8,11 @@ assignees: ''
 
 **Package and version** (e.g. `token-budget@0.1.0`, `token-budget-vercel-ai@0.1.0`)
 
+**Steps to reproduce**
+
+1.
+2.
+
 **What happened**
 
 **What you expected**
@@ -22,3 +27,6 @@ assignees: ''
 
 - Node.js version:
 - Runtime (Node / browser / edge):
+
+Remove API keys, private prompts, customer data, and other secrets from
+logs or reproductions before posting.
