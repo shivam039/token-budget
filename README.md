@@ -409,7 +409,7 @@ against every provider, and never evicts anything you've marked `pinned`.
 | [`packages/token-budget-otel`](./packages/token-budget-otel) | OpenTelemetry instrumentation: spans + token/cost/eviction counters. |
 | [`packages/token-budget-embeddings`](./packages/token-budget-embeddings) | Reference cosine-similarity `Scorer` for the `semanticRelevance` strategy. |
 | [`packages/token-budget-mcp`](./packages/token-budget-mcp) | MCP server exposing token-budget as callable tools for Claude Code/Desktop, Cursor, OpenAI Agents SDK, custom agents, and other MCP clients. See the [AI integration guide](./docs/MCP-INTEGRATIONS.md). |
-| [`packages/token-budget-devtools`](./packages/token-budget-devtools) | Local Vite app for visually inspecting a `serialize()` dump. Not published to npm. |
+| [`packages/token-budget-devtools`](./packages/token-budget-devtools) | Local Vite app for inspecting a `serialize()` dump, including its latest explain trace. Not published to npm. |
 | [`packages/token-budget-playground`](./packages/token-budget-playground) | Interactive Hugging Face Space demo — edit a conversation, set a budget, compare strategies, inspect `explain()`. Not published to npm. |
 | [`packages/token-budget-py`](./packages/token-budget-py) | Python port. **Work in progress** — partial API, see its own README for exact scope. |
 

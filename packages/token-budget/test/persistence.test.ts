@@ -42,6 +42,20 @@ describe('serialize()', () => {
 });
 
 describe('TokenBudget.deserialize()', () => {
+  it('round-trips the latest explain trace and accepts snapshots without one', () => {
+    const original = new TokenBudget({ maxTokens: 10, charsPerToken: 1, strategy: dropOldest() });
+    original.addMessage({ role: 'user', content: 'a'.repeat(20) });
+    original.getContextSync();
+    const report = original.explain();
+    const snapshot = JSON.parse(JSON.stringify(original.serialize()));
+    const restored = TokenBudget.deserialize(snapshot, { strategy: dropOldest() });
+    expect(restored.explain()).toEqual(report);
+
+    const legacySnapshot = { ...snapshot };
+    delete legacySnapshot.explain;
+    expect(TokenBudget.deserialize(legacySnapshot, { strategy: dropOldest() }).explain()).toBeUndefined();
+  });
+
   it('reconstructs a functionally identical budget from serialize()', () => {
     const original = new TokenBudget({ maxTokens: 1000, reserve: 50, charsPerToken: 4 });
     original.addMessage({ role: 'system', content: 'sys', pinned: true });

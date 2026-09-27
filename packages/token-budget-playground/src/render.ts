@@ -5,7 +5,7 @@
  * content is user-editable input in this playground, so it must never be
  * able to inject markup into the page.
  */
-import type { BudgetMessage, ContextResult, ExplainReport, Stats } from '@shivam.dixit/token-budget';
+import { summarizeExplain, type BudgetMessage, type ContextResult, type ExplainReport, type Stats } from '@shivam.dixit/token-budget';
 import type { EditableMessage } from './state.js';
 
 export function escapeHtml(unsafe: unknown): string {
@@ -143,6 +143,7 @@ export function renderStatsPanel(before: Stats, after: ContextResult | undefined
 /** Renders the real ExplainReport structure — adapted to whatever the library actually returns, nothing invented. */
 export function renderExplainPanel(report: ExplainReport | undefined): string {
   if (!report) return '<p class="hint">Apply a budget to see the decision trace.</p>';
+  const summary = summarizeExplain(report);
   const steps = report.steps
     .map(
       (step) => `
@@ -162,6 +163,7 @@ export function renderExplainPanel(report: ExplainReport | undefined): string {
     <div class="explain-step">
       <div>strategy applied: <strong>${escapeHtml(report.strategyApplied)}</strong></div>
       <div>${report.tokensBefore} → ${report.tokensAfter} tokens, ${report.tokensRemaining} remaining</div>
+      <div>${summary.totals.steps} steps · ${summary.totals.evicted} eviction decisions · ${summary.totals.synthesized} summaries</div>
     </div>
     ${steps}
   `;
