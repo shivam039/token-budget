@@ -13,7 +13,7 @@
     "bench:tool-output": "node tool-output-truncation-bench.mjs"
   },
   "devDependencies": {
-    "@shivam.dixit/token-budget": "^0.1.0",
+    "@shivam.dixit/token-budget": "^0.1.0 || ^0.2.0",
     "@shivam.dixit/token-budget-tiktoken": "^0.1.0",
     "gpt-tokenizer": "^4.0.0",
     "llm-token-counter": "^1.0.0",

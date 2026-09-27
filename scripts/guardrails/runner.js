@@ -43,6 +43,7 @@ async function run() {
     { id: 'skill_trigger', name: 'Skill trigger regression', file: 'check-skill-trigger.js' },
     { id: 'dataset', name: 'Dataset integrity', file: 'check-dataset.js' },
     { id: 'docs', name: 'Documentation drift', file: 'check-docs.js' },
+    { id: 'adapter_peers', name: 'Adapter core peer ranges', file: 'check-adapter-peers.js' },
   ];
 
   for (const check of checks) {
