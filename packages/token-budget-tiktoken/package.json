@@ -1,6 +1,6 @@
 {
   "name": "@shivam.dixit/token-budget-tiktoken",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "tiktoken Tokenizer adapter for token-budget, backed by pure-JS js-tiktoken by default (with an optional Node-only native/WASM path).",
   "repository": {
     "type": "git",
@@ -57,7 +57,7 @@
     "js-tiktoken": "^1.0.20"
   },
   "peerDependencies": {
-    "@shivam.dixit/token-budget": "^0.1.0",
+    "@shivam.dixit/token-budget": "^0.1.0 || ^0.2.0",
     "tiktoken": ">=1.0.0"
   },
   "peerDependenciesMeta": {
@@ -68,7 +68,7 @@
   "devDependencies": {
     "@vitest/coverage-v8": "^2.1.0",
     "tiktoken": "^1.0.20",
-    "@shivam.dixit/token-budget": "^0.1.0",
+    "@shivam.dixit/token-budget": "^0.1.0 || ^0.2.0",
     "tsup": "^8.3.0",
     "typescript": "^5.6.0",
     "vitest": "^2.1.0"

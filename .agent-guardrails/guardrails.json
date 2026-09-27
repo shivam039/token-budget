@@ -8,6 +8,7 @@
     "skill_integrity": true,
     "skill_trigger": true,
     "dataset": true,
-    "docs": true
+    "docs": true,
+    "adapter_peers": true
   }
 }

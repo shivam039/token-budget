@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.2.0 — Real-user readiness and clarity
+
+### What's new
+- Added `smartPriority`, a zero-configuration strategy that protects system instructions and the latest user turn while deprioritizing untagged tool traffic.
+- Added a hosted Streamable HTTP mode for the MCP demo server, alongside its local stdio mode.
+
+### Fixed
+- Improved MCP session isolation, request limits, and authentication defaults for hosted use.
+
+### Docs
+- Expanded integration guidance for MCP clients, strategies, adapters, and the interactive playground.
+- Clarified that satellite packages use independent version tracks; see `COMPATIBILITY.md` for the adapter policy.
+- Updated first-party adapter peer ranges to accept both core 0.1.x and 0.2.x releases.
+
+This is a minor release with no intentional breaking change to the core public API.
+
+---
+
 Engineering history of the monorepo, in the order it was built. Each
 package's own README documents its current behavior; this file documents
 how the project got here — useful for understanding *why* something is

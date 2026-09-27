@@ -152,6 +152,17 @@ managed messages  (fits maxTokens - reserve, guaranteed)
 send to your model's chat-completion API
 ```
 
+## Connect your provider
+
+Keep the same `TokenBudget` lifecycle and add the adapter for your message
+format. Each guide includes its install command and a runnable mapping
+example:
+
+- [Raw OpenAI Chat Completions](./packages/token-budget-openai/README.md)
+- [Anthropic Messages API](./packages/token-budget-anthropic/README.md)
+- [Vercel AI SDK](./packages/token-budget-vercel-ai/README.md)
+- [LangChain.js](./packages/token-budget-langchain/README.md)
+
 ## The lifecycle: `addMessage()` → `getContext()` → send → `commit()`
 
 The one thing worth understanding before you use this in a real loop —
