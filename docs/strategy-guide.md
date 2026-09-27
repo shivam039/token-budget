@@ -6,6 +6,10 @@ tool-call/tool-result atomicity regardless of which you pick — see the
 [root README](../README.md#what-this-actually-does). Exact signatures:
 [`docs/API.md#strategies`](./API.md#strategies).
 
+For runnable agent-loop recipes (tool-heavy sessions, multi-hour research,
+protected current queries, and summarize-then-priority fallback), see the
+[real agent patterns in the cookbook](../packages/token-budget/COOKBOOK.md#real-agent-loops).
+
 ## Decision table
 
 | Situation | Recommended strategy | Why |

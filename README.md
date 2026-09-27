@@ -423,7 +423,7 @@ each package's own README for its API, usage, and known limitations.
 - [`examples/coding-agent-context`](./examples/coding-agent-context) — the flagship demo: a realistic coding-agent session (file reads, terminal output, a full test run) that overflows its budget, with a before/after token count and the full `explain()` trace.
 - [`examples/openai-long-conversation`](./examples/openai-long-conversation) — a 300-turn conversation kept under budget, converted to OpenAI's wire format.
 - [`examples/coding-agent`](./examples/coding-agent) — tool-call/tool-result atomicity, made concrete.
-- [`packages/token-budget/COOKBOOK.md`](./packages/token-budget/COOKBOOK.md) — four smaller, tested recipes (customer-support bot, coding agent, RAG chat, long-form writing assistant).
+- [`packages/token-budget/COOKBOOK.md`](./packages/token-budget/COOKBOOK.md) — tested recipes for common chats and realistic coding/research agent loops.
 
 ## Docs
 

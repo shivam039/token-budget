@@ -13,6 +13,46 @@ true as the library evolves instead of rotting into stale prose.
 | [RAG chat](#rag-chat) | `summarizeOldest` | Retrieved docs are re-injected each turn, but conversational continuity should survive. |
 | [Long-form writing assistant](#long-form-writing-assistant) | `summarizeOldest` + `maxSummaryDepth` | A long session needs many rounds of re-summarization, not just one. |
 
+## Real agent loops
+
+These recipes cover heavier patterns from real agent loops. Each source file
+is runnable with the workspace build, and each has a deterministic test
+that checks its stated behavior.
+
+| Recipe | Source | Test | Key behavior |
+| --- | --- | --- | --- |
+| [Tool-output-heavy coding session](#tool-output-heavy-coding-session) | [`cookbook-tool-heavy-agent.ts`](./examples/cookbook-tool-heavy-agent.ts) | [`cookbook-tool-heavy-agent.test.ts`](./test/cookbook-tool-heavy-agent.test.ts) | Truncates a large result before buffering; smartPriority evicts old tool pairs atomically. |
+| [Multi-hour research agent](#multi-hour-research-agent) | [`cookbook-research-agent.ts`](./examples/cookbook-research-agent.ts) | [`cookbook-research-agent.test.ts`](./test/cookbook-research-agent.test.ts) | Commits a compact research brief between passes while retaining the current turn. |
+| [Pinned system prompt and current query](#pinned-system-prompt-and-current-query) | [`cookbook-pinned-current-query.ts`](./examples/cookbook-pinned-current-query.ts) | [`cookbook-pinned-current-query.test.ts`](./test/cookbook-pinned-current-query.test.ts) | smartPriority keeps the system instructions and newest user request without hand-tagging. |
+| [Summarize with a priority backstop](#summarize-with-a-priority-backstop) | [`cookbook-summarize-priority-backstop.ts`](./examples/cookbook-summarize-priority-backstop.ts) | [`cookbook-summarize-priority-backstop.test.ts`](./test/cookbook-summarize-priority-backstop.test.ts) | A summary pass preserves a checkpoint; priority enforces the remaining hard budget. |
+
+### Tool-output-heavy coding session
+
+Call `truncateToolOutput()` on raw terminal or file output before
+`addMessage()` so one huge result cannot crowd out the whole context. Keep
+the tool call and its capped result paired; `smartPriority()` drops old tool
+units before the active task when the buffer is still over budget.
+
+### Multi-hour research agent
+
+Use `summarizeOldest()` to preserve earlier evidence as a brief, then commit
+the returned messages between research passes. The example uses a
+deterministic local summarizer so it runs without credentials; replace it
+with your own summarization callback in an application.
+
+### Pinned system prompt and current query
+
+Use `smartPriority()` when each request should protect the system message
+and newest user query by default. The recipe shows how this helps long loops
+that append old turns without manually assigning message metadata.
+
+### Summarize with a priority backstop
+
+Compose `summarizeOldest()` before `priority()` with `strategies.chain()`.
+The summary retains a small checkpoint; priority then removes low-value
+intermediate traces if the summary alone does not fit. The test asserts both
+steps ran and that the final context is under budget.
+
 ## Customer-support bot
 
 Support conversations are short-lived, and resolving the current ticket
