@@ -58,6 +58,7 @@ describe('renderExplainPanel', () => {
     const html = renderExplainPanel(report);
     expect(html).toContain('drop-oldest');
     expect(html).toMatch(/evicted <code>/);
+    expect(html).toContain('eviction decisions');
   });
 
   it('shows a placeholder when nothing has run yet', () => {

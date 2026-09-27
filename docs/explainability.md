@@ -25,6 +25,13 @@ It's also useful *before* anything looks wrong — as a compliance/audit
 log (`auditLog: true` + `onAuditEvent`, see [`docs/API.md`](./API.md#tokenbudget-constructor--config)),
 or as a live "what's using my budget" indicator in a debugging UI.
 
+For compact logs and dashboards, use `summarizeExplain(report, 'compact')`
+to get per-step counts, or `formatExplain(report, 'verbose')` for readable
+reasons and source ids. The raw `ExplainReport` remains available for
+callers that need every field. A `serialize()` snapshot also carries the
+latest report when one exists, so the devtools viewer can inspect the same
+decision after a restart.
+
 ## Real output, not illustrative
 
 This is what `budget.explain()` actually returns — every field below is a

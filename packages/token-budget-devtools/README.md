@@ -3,8 +3,8 @@
 A local, standalone Vite app for visually inspecting a
 [`token-budget`](https://www.npmjs.com/package/token-budget)
 `serialize()` dump: buffer contents, per-message token counts, pinned
-markers, and role. Not published to npm — clone the monorepo and run it
-locally.
+markers, role, and the latest saved explain trace when available. Not
+published to npm — clone the monorepo and run it locally.
 
 ## Running it
 
@@ -26,12 +26,14 @@ const dump = JSON.stringify(budget.serialize(), null, 2);
 - Total `maxTokens`/`reserve`/tokens-used summary.
 - Every message in the dump, in order, with its role, id, token count, a
   pin marker for pinned messages, and a truncated content preview.
+- A compact summary of the latest strategy decision, including token totals
+  and eviction/summarization counts.
 
 ## Scope
 
 This reads a static JSON snapshot — it does not connect to a running
-process, and it does not visualize `explain()`'s strategy trace or
-streaming state. Untrusted JSON is treated as such: every field is
+process, and it cannot show strategy history beyond the latest saved
+`explain()` report or resume streaming state. Untrusted JSON is treated as such: every field is
 HTML-escaped before being inserted into the page, since a dump could come
 from someone else (e.g. shared for debugging help) and shouldn't be able
 to run script in your browser just by being opened.

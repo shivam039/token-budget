@@ -1,4 +1,6 @@
 export { TokenBudget } from './budget.js';
+export { formatExplain, summarizeExplain } from './explain.js';
+export type { ExplainSummary, ExplainSummaryMode, ExplainSummaryStep } from './explain.js';
 export * as strategies from './strategies/index.js';
 export { createEstimateTokenizer } from './tokenizer.js';
 

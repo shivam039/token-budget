@@ -223,6 +223,8 @@ export interface SerializedState {
   messages: BudgetMessage[];
   /** Open streams, only present when serialized with `includeOpenStreams: true` (FR2-6.4). */
   streaming?: SerializedStream[];
+  /** Latest explain trace, present after a context decision; absent in older snapshots. */
+  explain?: ExplainReport;
 }
 
 export interface TokenBudgetConfig {

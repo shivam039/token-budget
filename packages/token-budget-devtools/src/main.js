@@ -1,10 +1,11 @@
-import { formatStats, renderMessagesHtml } from './render.js';
+import { formatExplainSummary, formatStats, renderMessagesHtml } from './render.js';
 
 const dropzone = document.getElementById('dropzone');
 const fileInput = document.getElementById('fileInput');
 const viewer = document.getElementById('viewer');
 const messagesList = document.getElementById('messagesList');
 const statsDiv = document.getElementById('stats');
+const explainDiv = document.getElementById('explain');
 
 dropzone.addEventListener('click', () => fileInput.click());
 dropzone.addEventListener('dragover', (e) => {
@@ -37,5 +38,6 @@ function handleFile(file) {
 function renderState(state) {
   viewer.classList.remove('hidden');
   statsDiv.textContent = formatStats(state);
+  explainDiv.textContent = formatExplainSummary(state);
   messagesList.innerHTML = renderMessagesHtml(state);
 }

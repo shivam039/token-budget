@@ -1,3 +1,5 @@
+import { formatExplain } from '@shivam.dixit/token-budget';
+
 /**
  * Pure rendering helpers, factored out of main.js so they're unit-testable
  * without a DOM/Vite runtime. Every value interpolated into HTML here goes
@@ -23,6 +25,10 @@ export function escapeHtml(unsafe) {
 export function formatStats(state) {
   const totalTokens = (state.messages ?? []).reduce((acc, m) => acc + (m.tokens ?? 0), 0);
   return `Max Tokens: ${state.maxTokens} | Reserve: ${state.reserve} | Used: ${totalTokens}`;
+}
+
+export function formatExplainSummary(state) {
+  return state?.explain ? formatExplain(state.explain, 'compact') : 'No explain trace is included in this snapshot.';
 }
 
 function contentPreview(content) {

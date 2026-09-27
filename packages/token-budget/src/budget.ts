@@ -407,6 +407,7 @@ export class TokenBudget {
       devMode: this.devMode,
       onStrategyDuringStream: this.onStrategyDuringStream,
       messages: this.getMessages(),
+      explain: this.lastExplainReport,
     };
     if (options.includeOpenStreams && this.streams.size > 0) {
       state.streaming = [...this.streams.entries()].map(
@@ -453,6 +454,7 @@ export class TokenBudget {
       ...overrides,
     });
     budget.commit(state.messages);
+    budget.lastExplainReport = state.explain;
 
     for (const stream of state.streaming ?? []) {
       budget.beginStream(stream.id, stream.role, stream.metadata);

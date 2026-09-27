@@ -200,6 +200,14 @@ the `evicted` event already costs (proportional to what was actually
 evicted, not to buffer size) — negligible if you never call `explain()` or
 listen to `decision`, and free of any built-in telemetry either way.
 
+For compact dashboards, `summarizeExplain(report, 'compact')` returns
+per-step counts in a JSON-friendly object. `formatExplain(report, 'verbose')`
+returns a readable plain-text report with reasons and summary source ids.
+Both accept `'compact'` by default and keep the original `ExplainReport`
+shape intact. `serialize()` includes the latest report when one exists, and
+`deserialize()` restores it; older snapshots without the optional field
+continue to load.
+
 Writing a custom strategy? Call the optional `ctx.trace?.(step)` sink with
 the same shape to participate in `explain()` — see [Write your own
 strategy](#write-your-own-strategy).

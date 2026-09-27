@@ -367,6 +367,18 @@ Each `StrategyStepTrace`: `strategyName`, `tokensBefore`, `tokensAfter`,
 Returns `undefined` if neither `getContext()` nor `getContextSync()` has
 been called yet.
 
+For smaller logging or rendering shapes, the core exports
+`summarizeExplain(report, mode?)` (JSON-friendly counts and optional
+details) and `formatExplain(report, mode?)` (plain text). `mode` is
+`'compact'` by default or `'verbose'` to include each eviction reason and
+summary source list. These helpers leave the raw `ExplainReport` unchanged.
+
+```ts
+const summary = summarizeExplain(report, 'compact');
+summary.totals.evicted; // number of eviction decisions across all steps
+console.log(formatExplain(report, 'verbose'));
+```
+
 **Related APIs:** [`docs/explainability.md`](./explainability.md), the `decision` event under [Events](#events)
 
 ---
@@ -452,7 +464,7 @@ serialize(options?: { includeOpenStreams?: boolean }): SerializedState
 | --- | --- | --- | --- | --- |
 | `options.includeOpenStreams` | `boolean` | No | `false` | Include open streams' accumulated partial content, each marked `wasInterrupted: true`. Resuming/finalizing them on restore is left to the caller. |
 
-**Returns:** `SerializedState`: `schemaVersion`, `maxTokens`, `reserve`, `warningThreshold`, `charsPerToken`, `devMode`, `onStrategyDuringStream`, `messages`, and optionally `streaming`.
+**Returns:** `SerializedState`: `schemaVersion`, `maxTokens`, `reserve`, `warningThreshold`, `charsPerToken`, `devMode`, `onStrategyDuringStream`, `messages`, and optionally `streaming` and the latest `explain` report (if a context decision has run).
 
 **Important behavior:** Excludes anything that can't be serialized
 generically — the tokenizer instance, `strategy`, `messageOverhead`,

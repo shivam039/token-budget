@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { escapeHtml, formatStats, renderMessageHtml, renderMessagesHtml } from '../src/render.js';
+import { escapeHtml, formatExplainSummary, formatStats, renderMessageHtml, renderMessagesHtml } from '../src/render.js';
 
 describe('escapeHtml', () => {
   it('escapes HTML-significant characters', () => {
@@ -22,6 +22,23 @@ describe('formatStats', () => {
 
   it('treats a missing messages array as zero usage', () => {
     expect(formatStats({ maxTokens: 100, reserve: 0 })).toBe('Max Tokens: 100 | Reserve: 0 | Used: 0');
+  });
+});
+
+describe('formatExplainSummary', () => {
+  it('shows a compact decision trace from a serialized snapshot', () => {
+    const html = formatExplainSummary({
+      explain: {
+        strategyApplied: 'drop-oldest', timestamp: 1, tokensBefore: 30, tokensAfter: 20, tokensRemaining: 5,
+        steps: [{ strategyName: 'drop-oldest', tokensBefore: 30, tokensAfter: 20, messagesConsidered: 3, evicted: [{ id: 'm1', reason: 'oldest' }], synthesized: [] }],
+      },
+    });
+    expect(html).toContain('eviction decisions: 1');
+    expect(html).not.toContain('evicted m1:');
+  });
+
+  it('explains when no trace was saved', () => {
+    expect(formatExplainSummary({ messages: [] })).toContain('No explain trace');
   });
 });
 
