@@ -10,6 +10,10 @@ assignees: ''
 
 **What's missing today** — what did you try, and where did it fall short?
 
+**Current workaround** — if any:
+
+**Who else is affected?** — optional evidence from an app, team, or public project:
+
 **Proposed shape**, if you have one — a strategy, a new `TokenBudget`
 config option, a new adapter package? See
 [`CONTRIBUTING.md`](../../CONTRIBUTING.md) for the naming convention and
