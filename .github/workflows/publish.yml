@@ -101,7 +101,6 @@ jobs:
             "packages/token-budget-embeddings"
             "packages/token-budget-otel"
             "packages/token-budget-pricing"
-            "packages/token-budget-mcp"
           )
           for pkg in "${PACKAGES[@]}"; do
             echo "::group::Publishing $pkg"
@@ -124,3 +123,22 @@ jobs:
             fi
             echo "::endgroup::"
           done
+
+      - name: Publish MCP package to npm
+        if: ${{ !inputs.dry_run && vars.NPM_TOKEN_BUDGET_MCP_PUBLISH_ENABLED == 'true' }}
+        run: |
+          if output=$(npm publish -w packages/token-budget-mcp --provenance --access public 2>&1); then
+            echo "$output"
+          else
+            echo "$output"
+            if echo "$output" | grep -qi "cannot publish over the previously published version"; then
+              echo "::warning::The MCP package is already published at this version — skipping, not a failure."
+            else
+              exit 1
+            fi
+          fi
+
+      - name: Explain skipped MCP package publish
+        if: ${{ !inputs.dry_run && vars.NPM_TOKEN_BUDGET_MCP_PUBLISH_ENABLED != 'true' }}
+        run: |
+          echo "::warning::Skipping @shivam.dixit/token-budget-mcp: bootstrap the first npm release, configure its trusted publisher for shivam039/token-budget and .github/workflows/publish.yml, then set repository variable NPM_TOKEN_BUDGET_MCP_PUBLISH_ENABLED=true."
