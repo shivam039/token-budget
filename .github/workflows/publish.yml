@@ -83,7 +83,7 @@ jobs:
           )
           for pkg in "${PACKAGES[@]}"; do
             echo "::group::Dry-run for $pkg"
-            npm publish -w "$pkg" --access public --dry-run
+            npm pack -w "$pkg" --dry-run
             echo "::endgroup::"
           done
 
