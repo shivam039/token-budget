@@ -33,6 +33,12 @@ for current status. Until then, use the "Run it from a local clone"
 steps below instead — everything else on this page (tools, examples,
 Inspector) works identically either way.
 
+The release workflow skips this package until its first npm version is
+published manually and npm Trusted Publishing is configured for the
+`shivam039/token-budget` repository and `publish.yml` workflow. After
+that setup, enable automated releases by setting the GitHub repository
+Actions variable `NPM_TOKEN_BUDGET_MCP_PUBLISH_ENABLED` to `true`.
+
 ## Use it with Claude Code
 
 ```sh
