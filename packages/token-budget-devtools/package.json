@@ -16,6 +16,7 @@
   "scripts": {
     "build": "vite build",
     "dev": "vite",
+    "pretest": "npm run build --workspace=@shivam.dixit/token-budget",
     "test": "vitest run",
     "typecheck": "echo \"token-budget-devtools is plain JS, nothing to typecheck\""
   },
