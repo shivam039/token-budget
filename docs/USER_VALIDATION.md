@@ -31,16 +31,37 @@ Stage 6 is also the trigger for reconsidering anything in
 
 ## Tracking
 
-A running log — one row per contact, updated as the funnel stage
-changes. Keep this current in the same PR/commit as any outreach round,
-so it doesn't drift from what's actually happened:
+Keep a private, person-level working log and update this file with aggregate
+counts and sanitized themes after each outreach round. Do not commit names,
+handles, contact dates, identity mappings, project details, or private
+correspondence. Do not publish a quote or attribute feedback without
+permission. The evaluation steps and evidence bar are in
+[`EXTERNAL_PILOT.md`](./EXTERNAL_PILOT.md); candidate research and human
+outreach are described in [`FIRST_USERS.md`](./FIRST_USERS.md).
 
-| # | Candidate (repo/handle) | Channel | Date contacted | Response | Stage reached | Notes |
-| --- | --- | --- | --- | --- | --- | --- |
-| | | | | | | |
+No pilot outcomes have been recorded in this public file yet. This is a
+documentation status, not a claim that nobody has tried the package.
 
-(Empty until the first outreach round — see `docs/FIRST_USERS.md` for
-how rows get added.)
+| Funnel stage | Long-term target | Publicly recorded count |
+| --- | ---: | --- |
+| Identified | 50 | Not recorded |
+| Contacted | 20 | Not recorded |
+| Installed/tested | 10 | Not recorded |
+| Real project use | 5 | Not recorded |
+| Still using it | 3 | Not recorded |
+| Independent feature requests | 3 | Not recorded |
+
+Repeated setup or documentation friction and concrete unmet feature needs
+are also not yet characterized in the public record.
+
+## Next milestone
+
+The next product-validation milestone is three unrelated developers at
+stage 3 (installed/tested). Treat it as pending until each person explicitly
+confirms a real local evaluation. This is an initial pilot milestone toward
+the stage-3 target of ten; it does not lower the long-term target. Until the
+pilot produces evidence, prioritize learning and documentation fixes over
+new feature work.
 
 ## Cadence
 

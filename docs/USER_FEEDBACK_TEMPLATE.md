@@ -1,19 +1,25 @@
 # User feedback template
 
-Fill one of these out per real conversation from the
+Use this privately for each substantive response from the
 [`docs/FIRST_USERS.md`](./FIRST_USERS.md) outreach loop — anyone who
 actually responded with substance, not just "thanks, will check it
 out." The point is to turn a conversation into something the project can
-act on, not to collect a testimonial.
+act on, not to collect a testimonial. Do not commit completed forms or
+private correspondence. If you add common themes to the public tracking
+log, keep it aggregate; get permission before public attribution.
 
-Copy the block below into a new entry (a file per contact, or an entry
-in a running log — whatever's easiest to keep current) and fill it in
-from what they actually said, not from what you hoped they'd say.
+Fill in what the developer actually confirmed, not what you hoped they
+would say. An incomplete answer is better than guessing. Never include
+private code, prompts, conversation logs, credentials, or customer data.
 
 ```
-Project:
-Developer:
-Framework:
+Participant ID:
+Project type (generic description):
+Pilot outcome (could not start / installed / exercised / production use):
+Packages and versions:
+Runtime and framework versions:
+Evaluation scenario (sanitized):
+Setup time or blocker:
 Current context-management approach:
 Problem encountered:
 Would token-budget solve it?
@@ -27,10 +33,21 @@ Would they recommend it?
 
 ## Field-by-field
 
-- **Project** — what they're building, one line (e.g. "a coding agent
-  that reads/edits a repo over long sessions").
-- **Developer** — name/handle, for your own follow-up reference. Don't
-  publish this without asking.
+- **Participant ID** — a private ID used only to connect notes during
+  evaluation. Keep it and any identity mapping outside the repository.
+- **Project type** — a generic description (e.g. "a coding agent that
+  reads and edits a repository over long sessions"); omit the project,
+  employer, and customer names.
+- **Pilot outcome** — record only the highest stage the developer
+  explicitly confirmed; a download or intention to try does not count as
+  exercising the API.
+- **Packages and versions** — include `token-budget` and any adapter used.
+- **Runtime and framework versions** — Node and framework versions, if
+  known; don't infer missing details.
+- **Evaluation scenario (sanitized)** — summarize the case without copying
+  prompts, conversation history, private source, or customer data.
+- **Setup time or blocker** — approximate time or the exact public error
+  message with secrets removed.
 - **Framework** — LangChain.js, Vercel AI SDK, a raw provider SDK, their
   own orchestration — whatever they're actually calling.
 - **Current context-management approach** — exactly what they do today:
