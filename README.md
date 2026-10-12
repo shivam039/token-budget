@@ -494,6 +494,9 @@ is:
 Trying token-budget in a real agent? Early reports help prioritize what
 gets improved next. Use the template that matches your situation:
 
+- [Run the 15-minute external pilot](./docs/EXTERNAL_PILOT.md) to evaluate
+  it in an existing agent project without sharing private prompts or code.
+
 - [Report a bug](https://github.com/shivam039/token-budget/issues/new?template=bug_report.md) with the package version, reproduction steps, and runtime.
 - [Get integration help](https://github.com/shivam039/token-budget/issues/new?template=integration_help.md) for a provider, SDK, or agent loop.
 - [Suggest an improvement](https://github.com/shivam039/token-budget/issues/new?template=feature_request.md) with the problem and any workaround.

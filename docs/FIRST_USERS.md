@@ -114,9 +114,16 @@ A manual process, seven steps, none of them automated:
    and spam.
 7. **Record the feedback**, not just that contact happened — use
    [`docs/USER_FEEDBACK_TEMPLATE.md`](./USER_FEEDBACK_TEMPLATE.md) for
-   any real response, and log every contact (response or not) in
-   `docs/USER_VALIDATION.md`'s tracking table: target, channel, date,
-   response, outcome.
+   any substantive response. Keep person-level contact and response details
+   in a private maintainer log, including contacts that did not respond;
+   update `docs/USER_VALIDATION.md` only with aggregate counts and
+   sanitized themes.
+
+Don't commit names, handles, contact dates, identity mappings, private
+correspondence, or project details. Don't publish a person's feedback or
+attribute a quote without permission. Don't ask anyone to share private
+code, prompts, conversation logs, credentials, or customer data as part of
+evaluation.
 
 Repeat weekly until the targets in `USER_VALIDATION.md` are hit. No
 spamming, no mass-DMing, no automated messages, no scraping. This is a
