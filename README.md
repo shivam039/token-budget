@@ -483,7 +483,8 @@ is:
 
 - [`CONTRIBUTING.md`](./CONTRIBUTING.md) — how to add a community tokenizer, strategy, or framework adapter; the `token-budget-{tokenizer,strategy,adapter}-*` naming convention; and the review bar.
 - [`CHANGELOG.md`](./CHANGELOG.md) — engineering history, phase by phase.
-- [`docs/PRODUCT_AUDIT.md`](./docs/PRODUCT_AUDIT.md) — what exists today, what's production-ready, what's intentionally not built yet.
+- [`docs/PRODUCT_AUDIT.md`](./docs/PRODUCT_AUDIT.md) — current product inventory, evidence limits, and scope decisions.
+- [`docs/PRD_0.12.0_1.0_READINESS.md`](./docs/PRD_0.12.0_1.0_READINESS.md) and [`docs/READINESS_0.12.0.md`](./docs/READINESS_0.12.0.md) — the 0.12.0 readiness milestone and its open 1.0 decision gates.
 - [`docs/DO_NOT_BUILD_YET.md`](./docs/DO_NOT_BUILD_YET.md) — the explicit scope-creep guard (no VS Code extension, no Python rewrite, no MCP *client* middleware, etc. — and why).
 - [`docs/MCP.md`](./docs/MCP.md) — why an MCP server isn't the right *production* consumption path, and what [`token-budget-mcp`](./packages/token-budget-mcp) actually is instead (a testing/demo surface). [`docs/PYTHON_ROADMAP.md`](./docs/PYTHON_ROADMAP.md) — a second deferred-until-evidence decision, reasoned through.
 - [`docs/FIRST_USERS.md`](./docs/FIRST_USERS.md), [`docs/USER_VALIDATION.md`](./docs/USER_VALIDATION.md), and [`docs/USER_FEEDBACK_TEMPLATE.md`](./docs/USER_FEEDBACK_TEMPLATE.md) — how this project finds its first real users, tracks the funnel, and turns a conversation into a product decision.
